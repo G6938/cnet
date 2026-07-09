@@ -4,15 +4,18 @@ using Telegram.Bot.Types;
 
 namespace Cnet.Pipeline;
 
+public sealed class UpdateLease(Update update, Func<CancellationToken, ValueTask> onComplete)
+{
+    public Update Update { get; } = update;
+
+    public ValueTask CompleteAsync(CancellationToken cancellationToken = default) => onComplete(cancellationToken);
+}
+
 public interface IUpdateChannel
 {
-    bool TryEnqueue(Update update);
-
     ValueTask EnqueueAsync(Update update, CancellationToken cancellationToken);
 
-    ValueTask<bool> WaitToReadAsync(CancellationToken cancellationToken);
-
-    bool TryDequeue(out Update update);
+    ValueTask<UpdateLease?> DequeueAsync(CancellationToken cancellationToken);
 
     void Complete();
 }
@@ -33,15 +36,25 @@ public sealed class BoundedUpdateChannel : IUpdateChannel
         });
     }
 
-    public bool TryEnqueue(Update update) => _channel.Writer.TryWrite(update);
-
     public ValueTask EnqueueAsync(Update update, CancellationToken cancellationToken)
         => _channel.Writer.WriteAsync(update, cancellationToken);
 
-    public ValueTask<bool> WaitToReadAsync(CancellationToken cancellationToken)
-        => _channel.Reader.WaitToReadAsync(cancellationToken);
-
-    public bool TryDequeue(out Update update) => _channel.Reader.TryRead(out update!);
+    public async ValueTask<UpdateLease?> DequeueAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            var update = await _channel.Reader.ReadAsync(cancellationToken).ConfigureAwait(false);
+            return new UpdateLease(update, _ => ValueTask.CompletedTask);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            return null;
+        }
+        catch (ChannelClosedException)
+        {
+            return null;
+        }
+    }
 
     public void Complete() => _channel.Writer.TryComplete();
 }

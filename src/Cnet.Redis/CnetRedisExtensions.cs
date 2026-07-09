@@ -1,6 +1,7 @@
 using Cnet.DependencyInjection;
 using Cnet.Pipeline;
 using Cnet.Sessions;
+using Cnet.Throttling;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
@@ -39,6 +40,24 @@ public static class CnetRedisExtensions
         services.RemoveAll<ISessionStorage>();
         services.AddSingleton<ISessionStorage, RedisSessionStorage>();
 
+        services.RemoveAll<IOutboundThrottle>();
+        services.AddSingleton<IOutboundThrottle, RedisOutboundThrottle>();
+
+        return builder;
+    }
+
+    public static CnetBuilder UseRedisRateLimit(this CnetBuilder builder, int updatesPerMinutePerUser)
+    {
+        ArgumentNullException.ThrowIfNull(builder);
+        ArgumentOutOfRangeException.ThrowIfLessThan(updatesPerMinutePerUser, 1);
+
+        var services = builder.Services;
+        services.RemoveAll<IInboundRateLimiter>();
+        services.AddSingleton<IInboundRateLimiter>(provider => new RedisInboundRateLimiter(
+            updatesPerMinutePerUser,
+            provider.GetRequiredService<IConnectionMultiplexer>(),
+            provider.GetRequiredService<IOptions<CnetRedisOptions>>()));
+        services.AddScoped<IUpdateMiddleware, InboundRateLimitMiddleware>();
         return builder;
     }
 }

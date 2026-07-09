@@ -430,8 +430,24 @@ builder.Services
     .AddCnet(o => o.BotToken = token)
     .UseRedis(r => r.ConnectionString = "localhost:6379")
     .UseReplayGuard()
+    .UseRedisRateLimit(20)
     .OnCommand("start", cmd => cmd.ReplyAsync("Hi"));
 ```
+
+`UseRedis` upgrades three things to be safe across a fleet:
+
+- **Durable queue** — updates live in a Redis Stream and are acknowledged only
+  after processing; a crashed worker's updates are reclaimed by another
+  instance, so nothing is lost.
+- **Distributed outbound throttle** — the 30 msg/s global and 1 msg/s per-chat
+  limits are enforced across every instance, so the fleet as a whole never
+  exceeds Telegram's limits.
+- **Shared replay protection and sessions** — one Redis, one source of truth.
+
+> **Albums across instances:** media-group buffering is per-instance. If you run
+> multiple instances behind a load balancer and use `OnAlbum`, configure the
+> load balancer for sticky sessions (route a chat's updates to the same
+> instance) so an album's parts arrive together.
 
 ## Metrics
 

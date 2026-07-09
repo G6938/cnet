@@ -72,9 +72,15 @@ public static class CnetWebhookExtensions
             return Results.BadRequest();
         }
 
-        return channel.TryEnqueue(update)
-            ? Results.Ok()
-            : Results.StatusCode(StatusCodes.Status429TooManyRequests);
+        try
+        {
+            await channel.EnqueueAsync(update, cancellationToken).ConfigureAwait(false);
+            return Results.Ok();
+        }
+        catch (Exception) when (!cancellationToken.IsCancellationRequested)
+        {
+            return Results.StatusCode(StatusCodes.Status503ServiceUnavailable);
+        }
     }
 
     private static bool SecretsMatch(string presented, string configured)

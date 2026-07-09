@@ -3,11 +3,19 @@ using Cnet.Routing;
 
 namespace Cnet.Pipeline;
 
-public sealed class InboundRateLimitState(int updatesPerMinutePerUser)
+public interface IInboundRateLimiter
+{
+    ValueTask<bool> TryRegisterAsync(long userId, CancellationToken cancellationToken = default);
+}
+
+public sealed class InboundRateLimitState(int updatesPerMinutePerUser) : IInboundRateLimiter
 {
     private readonly ConcurrentDictionary<long, (long WindowIndex, int Count)> _counters = new();
 
     public int Limit { get; } = updatesPerMinutePerUser;
+
+    public ValueTask<bool> TryRegisterAsync(long userId, CancellationToken cancellationToken = default)
+        => ValueTask.FromResult(TryRegister(userId));
 
     public bool TryRegister(long userId)
     {
@@ -37,18 +45,19 @@ public sealed class InboundRateLimitState(int updatesPerMinutePerUser)
     }
 }
 
-public sealed class InboundRateLimitMiddleware(InboundRateLimitState state) : IUpdateMiddleware
+public sealed class InboundRateLimitMiddleware(IInboundRateLimiter limiter) : IUpdateMiddleware
 {
-    public Task InvokeAsync(UpdateContext context, UpdateStep nextStep)
+    public async Task InvokeAsync(UpdateContext context, UpdateStep nextStep)
     {
         ArgumentNullException.ThrowIfNull(context);
         ArgumentNullException.ThrowIfNull(nextStep);
 
-        if (context.FromId is long userId && !state.TryRegister(userId))
+        if (context.FromId is long userId
+            && !await limiter.TryRegisterAsync(userId, context.CancellationToken).ConfigureAwait(false))
         {
-            return Task.CompletedTask;
+            return;
         }
 
-        return nextStep(context);
+        await nextStep(context).ConfigureAwait(false);
     }
 }

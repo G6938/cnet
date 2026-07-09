@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Text.Json;
 using Cnet.Pipeline;
 using Microsoft.Extensions.Logging;
@@ -16,10 +17,10 @@ public sealed class RedisUpdateChannel : IUpdateChannel, IDisposable
     private readonly CnetRedisOptions _options;
     private readonly ILogger<RedisUpdateChannel> _logger;
     private readonly string _consumerName;
-    private readonly SemaphoreSlim _available = new(0);
-    private readonly Queue<(RedisValue Id, Update Update)> _buffer = new();
-    private readonly Lock _bufferGate = new();
+    private readonly ConcurrentQueue<(RedisValue Id, Update Update)> _buffer = new();
+    private readonly SemaphoreSlim _fetchGate = new(1, 1);
     private volatile bool _groupReady;
+    private long _sinceLastClaim;
 
     public RedisUpdateChannel(
         IConnectionMultiplexer connection,
@@ -32,134 +33,162 @@ public sealed class RedisUpdateChannel : IUpdateChannel, IDisposable
         _consumerName = "c-" + Guid.NewGuid().ToString("N")[..8];
     }
 
-    public bool TryEnqueue(Update update)
-    {
-        _ = EnqueueAsync(update, CancellationToken.None).AsTask();
-        return true;
-    }
-
     public async ValueTask EnqueueAsync(Update update, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(update);
         cancellationToken.ThrowIfCancellationRequested();
 
         var payload = JsonSerializer.Serialize(update, JsonBotAPI.Options);
-        var database = _connection.GetDatabase();
 
-        await database.StreamAddAsync(
+        await _connection.GetDatabase().StreamAddAsync(
             _options.StreamName,
             [new NameValueEntry(PayloadField, payload)],
             maxLength: _options.StreamMaxLength,
             useApproximateMaxLength: true).ConfigureAwait(false);
     }
 
-    public async ValueTask<bool> WaitToReadAsync(CancellationToken cancellationToken)
+    public async ValueTask<UpdateLease?> DequeueAsync(CancellationToken cancellationToken)
     {
         await EnsureGroupAsync().ConfigureAwait(false);
 
-        while (true)
+        while (!cancellationToken.IsCancellationRequested)
         {
-            lock (_bufferGate)
+            if (_buffer.TryDequeue(out var entry))
             {
-                if (_buffer.Count > 0)
+                return new UpdateLease(entry.Update, _ => AcknowledgeAsync(entry.Id));
+            }
+
+            await FillBufferAsync(cancellationToken).ConfigureAwait(false);
+
+            if (_buffer.IsEmpty)
+            {
+                try
                 {
-                    return true;
+                    await Task.Delay(200, cancellationToken).ConfigureAwait(false);
+                }
+                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                {
+                    return null;
                 }
             }
-
-            if (await FetchBatchAsync(cancellationToken).ConfigureAwait(false))
-            {
-                return true;
-            }
-
-            try
-            {
-                await Task.Delay(200, cancellationToken).ConfigureAwait(false);
-            }
-            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
-            {
-                return false;
-            }
-        }
-    }
-
-    public bool TryDequeue(out Update update)
-    {
-        lock (_bufferGate)
-        {
-            if (_buffer.Count > 0)
-            {
-                var entry = _buffer.Dequeue();
-                update = entry.Update;
-                _ = AcknowledgeAsync(entry.Id);
-                return true;
-            }
         }
 
-        update = null!;
-        return false;
+        return null;
     }
 
     public void Complete()
     {
     }
 
-    public void Dispose() => _available.Dispose();
+    public void Dispose() => _fetchGate.Dispose();
 
-    private async Task<bool> FetchBatchAsync(CancellationToken cancellationToken)
+    private async Task FillBufferAsync(CancellationToken cancellationToken)
     {
-        var database = _connection.GetDatabase();
-
-        StreamEntry[] entries;
+        await _fetchGate.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
-            entries = await database.StreamReadGroupAsync(
+            if (!_buffer.IsEmpty)
+            {
+                return;
+            }
+
+            await ClaimStalePendingAsync().ConfigureAwait(false);
+
+            var database = _connection.GetDatabase();
+            StreamEntry[] entries;
+            try
+            {
+                entries = await database.StreamReadGroupAsync(
+                    _options.StreamName,
+                    _options.ConsumerGroup,
+                    _consumerName,
+                    StreamPosition.NewMessages,
+                    count: 32).ConfigureAwait(false);
+            }
+            catch (RedisException exception)
+            {
+                _logger.StreamReadFailed(exception);
+                return;
+            }
+
+            BufferEntries(entries);
+        }
+        finally
+        {
+            _fetchGate.Release();
+        }
+    }
+
+    private async Task ClaimStalePendingAsync()
+    {
+        var now = Environment.TickCount64;
+        if (now - Interlocked.Read(ref _sinceLastClaim) < _options.PendingClaimIdle.TotalMilliseconds)
+        {
+            return;
+        }
+
+        Interlocked.Exchange(ref _sinceLastClaim, now);
+
+        try
+        {
+            var database = _connection.GetDatabase();
+            var idleMilliseconds = (long)_options.PendingClaimIdle.TotalMilliseconds;
+            var pending = await database.StreamPendingMessagesAsync(
+                _options.StreamName,
+                _options.ConsumerGroup,
+                count: 32,
+                consumerName: RedisValue.Null).ConfigureAwait(false);
+
+            var stale = pending
+                .Where(message => message.IdleTimeInMilliseconds >= idleMilliseconds)
+                .Select(message => message.MessageId)
+                .ToArray();
+
+            if (stale.Length == 0)
+            {
+                return;
+            }
+
+            var claimed = await database.StreamClaimAsync(
                 _options.StreamName,
                 _options.ConsumerGroup,
                 _consumerName,
-                StreamPosition.NewMessages,
-                count: 32).ConfigureAwait(false);
+                idleMilliseconds,
+                stale).ConfigureAwait(false);
+
+            BufferEntries(claimed);
         }
         catch (RedisException exception)
         {
-            _logger.StreamReadFailed(exception);
-            return false;
+            _logger.StreamClaimFailed(exception);
         }
+    }
 
-        if (entries.Length == 0)
-        {
-            return false;
-        }
-
-        var added = false;
+    private void BufferEntries(StreamEntry[] entries)
+    {
         foreach (var entry in entries)
         {
             var payload = entry[PayloadField];
             if (payload.IsNullOrEmpty)
             {
-                await AcknowledgeAsync(entry.Id).ConfigureAwait(false);
+                FireAndForgetAck(entry.Id);
                 continue;
             }
 
             var update = JsonSerializer.Deserialize<Update>(payload.ToString(), JsonBotAPI.Options);
             if (update is null)
             {
-                await AcknowledgeAsync(entry.Id).ConfigureAwait(false);
+                FireAndForgetAck(entry.Id);
                 continue;
             }
 
-            lock (_bufferGate)
-            {
-                _buffer.Enqueue((entry.Id, update));
-            }
-
-            added = true;
+            _buffer.Enqueue((entry.Id, update));
         }
-
-        return added;
     }
 
-    private async Task AcknowledgeAsync(RedisValue entryId)
+    private void FireAndForgetAck(RedisValue entryId) => _ = AcknowledgeAsync(entryId).AsTask();
+
+    private async ValueTask AcknowledgeAsync(RedisValue entryId)
     {
         try
         {
@@ -180,10 +209,9 @@ public sealed class RedisUpdateChannel : IUpdateChannel, IDisposable
             return;
         }
 
-        var database = _connection.GetDatabase();
         try
         {
-            await database.StreamCreateConsumerGroupAsync(
+            await _connection.GetDatabase().StreamCreateConsumerGroupAsync(
                 _options.StreamName,
                 _options.ConsumerGroup,
                 StreamPosition.Beginning,
@@ -204,4 +232,7 @@ internal static partial class RedisUpdateChannelLog
 
     [LoggerMessage(EventId = 2, Level = LogLevel.Warning, Message = "Acknowledging a stream entry failed")]
     internal static partial void StreamAckFailed(this ILogger logger, Exception exception);
+
+    [LoggerMessage(EventId = 3, Level = LogLevel.Warning, Message = "Claiming stale pending entries failed")]
+    internal static partial void StreamClaimFailed(this ILogger logger, Exception exception);
 }

@@ -5,6 +5,36 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.0] - 2026-07-09
+
+### Fixed
+
+- **Durable queue correctness (critical):** the Redis update queue now
+  acknowledges an update only after it is fully processed. A worker that
+  crashes mid-processing leaves the update pending, and another instance
+  reclaims it via `XCLAIM` after the idle window — no more lost updates. The
+  in-memory queue uses the same lease model.
+- **Webhook enqueue no longer fire-and-forget:** the webhook awaits the write
+  and returns 503 if the queue is unavailable, instead of acknowledging an
+  update that was never stored.
+- Removed a dead semaphore and busy-loop leftovers from the Redis channel.
+
+### Added
+
+- **Distributed outbound throttle** (`UseRedis` replaces the throttle): the
+  30 msg/s global and 1 msg/s per-chat limits are now enforced across all
+  instances via Redis, so a fleet cannot collectively exceed Telegram's limits.
+- **Distributed inbound rate limiting** via `UseRedisRateLimit(n)`.
+- `IReplayGuard`, `IOutboundThrottle`, and `IInboundRateLimiter` abstractions
+  so every protection can be swapped for a distributed implementation.
+- Redis integration test suite covering durable delivery, stale-entry reclaim,
+  cross-instance replay protection, and shared sessions.
+
+### Changed
+
+- `IUpdateChannel` now hands out an `UpdateLease` that is completed after
+  successful processing, replacing the previous try-dequeue model.
+
 ## [1.5.0] - 2026-07-09
 
 ### Added
@@ -115,6 +145,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   keyboards, and ASP.NET Core webhook integration with secret-token validation
   and automatic registration
 
+[1.6.0]: https://github.com/G6938/cnet/releases/tag/v1.6.0
 [1.5.0]: https://github.com/G6938/cnet/releases/tag/v1.5.0
 [1.4.0]: https://github.com/G6938/cnet/releases/tag/v1.4.0
 [1.3.0]: https://github.com/G6938/cnet/releases/tag/v1.3.0

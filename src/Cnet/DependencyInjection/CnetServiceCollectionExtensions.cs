@@ -43,7 +43,7 @@ public static class CnetServiceCollectionExtensions
 
         services.TryAddSingleton<CnetClient>();
         services.TryAddSingleton<CnetRouter>();
-        services.TryAddSingleton<OutboundThrottle>();
+        services.TryAddSingleton<IOutboundThrottle, OutboundThrottle>();
         services.TryAddSingleton<ISessionStorage, InMemorySessionStorage>();
         services.TryAddSingleton<IUpdateChannel, BoundedUpdateChannel>();
         services.TryAddScoped<UpdatePipeline>();
@@ -168,7 +168,7 @@ public sealed class CnetBuilder(IServiceCollection services)
     public CnetBuilder UseRateLimit(int updatesPerMinutePerUser)
     {
         ArgumentOutOfRangeException.ThrowIfLessThan(updatesPerMinutePerUser, 1);
-        Services.TryAddSingleton(new InboundRateLimitState(updatesPerMinutePerUser));
+        Services.TryAddSingleton<IInboundRateLimiter>(new InboundRateLimitState(updatesPerMinutePerUser));
         Services.AddScoped<IUpdateMiddleware, InboundRateLimitMiddleware>();
         return this;
     }

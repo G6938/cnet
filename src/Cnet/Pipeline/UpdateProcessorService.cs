@@ -33,33 +33,47 @@ public sealed class UpdateProcessorService(
     {
         try
         {
-            while (await channel.WaitToReadAsync(stoppingToken).ConfigureAwait(false))
+            while (!stoppingToken.IsCancellationRequested)
             {
-                while (channel.TryDequeue(out var update))
+                var lease = await channel.DequeueAsync(stoppingToken).ConfigureAwait(false);
+                if (lease is null)
                 {
-                    await using var scope = scopeFactory.CreateAsyncScope();
-                    var client = scope.ServiceProvider.GetRequiredService<CnetClient>();
-                    var context = new UpdateContext(update, client, scope.ServiceProvider, stoppingToken);
+                    return;
+                }
 
-                    try
-                    {
-                        var pipeline = scope.ServiceProvider.GetRequiredService<UpdatePipeline>();
-                        await pipeline.ExecuteAsync(context).ConfigureAwait(false);
-                    }
-                    catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
-                    {
-                        return;
-                    }
-                    catch (Exception exception)
-                    {
-                        logger.UpdateProcessingFailed(exception, update.Id);
-                        await InvokeErrorHandlersAsync(scope.ServiceProvider, exception, context).ConfigureAwait(false);
-                    }
+                var completed = await ProcessAsync(lease.Update, stoppingToken).ConfigureAwait(false);
+                if (completed)
+                {
+                    await lease.CompleteAsync(stoppingToken).ConfigureAwait(false);
                 }
             }
         }
         catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
         {
+        }
+    }
+
+    private async Task<bool> ProcessAsync(Telegram.Bot.Types.Update update, CancellationToken stoppingToken)
+    {
+        await using var scope = scopeFactory.CreateAsyncScope();
+        var client = scope.ServiceProvider.GetRequiredService<CnetClient>();
+        var context = new UpdateContext(update, client, scope.ServiceProvider, stoppingToken);
+
+        try
+        {
+            var pipeline = scope.ServiceProvider.GetRequiredService<UpdatePipeline>();
+            await pipeline.ExecuteAsync(context).ConfigureAwait(false);
+            return true;
+        }
+        catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+        {
+            return false;
+        }
+        catch (Exception exception)
+        {
+            logger.UpdateProcessingFailed(exception, update.Id);
+            await InvokeErrorHandlersAsync(scope.ServiceProvider, exception, context).ConfigureAwait(false);
+            return true;
         }
     }
 

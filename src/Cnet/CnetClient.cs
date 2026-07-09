@@ -8,7 +8,7 @@ using Telegram.Bot.Types.ReplyMarkups;
 
 namespace Cnet;
 
-public sealed partial class CnetClient(ITelegramBotClient raw, OutboundThrottle throttle, IOptions<CnetOptions> options)
+public sealed partial class CnetClient(ITelegramBotClient raw, IOutboundThrottle throttle, IOptions<CnetOptions> options)
 {
     private readonly int _maxAttempts = options.Value.MaxSendAttempts;
     private User? _me;

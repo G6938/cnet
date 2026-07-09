@@ -3,7 +3,12 @@ using Microsoft.Extensions.Options;
 
 namespace Cnet.Throttling;
 
-public sealed class OutboundThrottle(IOptions<CnetOptions> options) : IDisposable
+public interface IOutboundThrottle
+{
+    Task WaitAsync(long chatId, CancellationToken cancellationToken = default);
+}
+
+public sealed class OutboundThrottle(IOptions<CnetOptions> options) : IOutboundThrottle, IDisposable
 {
     private const int MaxTrackedChats = 100000;
 
