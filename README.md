@@ -65,6 +65,7 @@ you. cnet takes a different position:
 | `cnet.aspnetcore` | ASP.NET Core webhook endpoint |
 | `cnet.redis` | Durable queue, distributed replay guard, shared sessions |
 | `cnet.metrics` | OpenTelemetry-compatible metrics |
+| `cnet.testing` | Test harness: drive handlers with a fake client |
 
 ## Installation
 
@@ -444,10 +445,9 @@ builder.Services
   exceeds Telegram's limits.
 - **Shared replay protection and sessions** — one Redis, one source of truth.
 
-> **Albums across instances:** media-group buffering is per-instance. If you run
-> multiple instances behind a load balancer and use `OnAlbum`, configure the
-> load balancer for sticky sessions (route a chat's updates to the same
-> instance) so an album's parts arrive together.
+With `UseRedis`, album aggregation is distributed too: parts arriving on
+different instances are buffered in Redis and delivered together, so `OnAlbum`
+works behind a load balancer without sticky sessions.
 
 ## Metrics
 
@@ -464,6 +464,27 @@ builder.Services
 
 Metrics: `cnet.updates.received`, `cnet.updates.processed`,
 `cnet.updates.failed`, and `cnet.update.duration` (ms).
+
+## Testing
+
+Add `cnet.testing` and drive your real handlers without a Telegram connection:
+
+```csharp
+await using var harness = new BotTestHarness(services =>
+    services.AddCnet(o => o.BotToken = "test")
+        .OnCommand("start", cmd => cmd.ReplyAsync("hello")));
+
+await harness.SendCommandAsync("start");
+
+Assert.Equal("hello", harness.Bot.SentMessages.Single().Text);
+```
+
+`harness.Bot.Requests` holds every outgoing API call for assertions, and
+`SendTextAsync` / `SendCallbackAsync` let you simulate any interaction,
+including multi-step session forms.
+
+A complete runnable example lives in
+[`samples/EchoBot`](https://github.com/G6938/cnet/tree/main/samples/EchoBot).
 
 ## Configuration reference
 

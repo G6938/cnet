@@ -5,6 +5,25 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.7.0] - 2026-07-09
+
+### Added
+
+- **Distributed album aggregation:** media-group buffering now runs through an
+  `IAlbumStore`. With `UseRedis`, album parts that arrive on different
+  instances are buffered in Redis and flushed together, so albums no longer
+  require sticky sessions behind a load balancer.
+- **cnet.testing** package: `BotTestHarness` drives commands, messages, and
+  callbacks through your real handler pipeline with a `FakeBotClient`, and lets
+  you assert on outgoing requests — no Telegram connection required.
+- `samples/EchoBot`: a complete runnable bot showing commands, a session-based
+  form, callbacks, keyboards, and rate limiting.
+
+### Changed
+
+- Album flushing moved to a background service polling the store, replacing the
+  per-group timer.
+
 ## [1.6.0] - 2026-07-09
 
 ### Fixed
@@ -145,6 +164,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   keyboards, and ASP.NET Core webhook integration with secret-token validation
   and automatic registration
 
+[1.7.0]: https://github.com/G6938/cnet/releases/tag/v1.7.0
 [1.6.0]: https://github.com/G6938/cnet/releases/tag/v1.6.0
 [1.5.0]: https://github.com/G6938/cnet/releases/tag/v1.5.0
 [1.4.0]: https://github.com/G6938/cnet/releases/tag/v1.4.0

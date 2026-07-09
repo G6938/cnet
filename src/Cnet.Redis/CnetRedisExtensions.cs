@@ -43,6 +43,9 @@ public static class CnetRedisExtensions
         services.RemoveAll<IOutboundThrottle>();
         services.AddSingleton<IOutboundThrottle, RedisOutboundThrottle>();
 
+        services.RemoveAll<Cnet.Albums.IAlbumStore>();
+        services.AddSingleton<Cnet.Albums.IAlbumStore, RedisAlbumStore>();
+
         return builder;
     }
 

@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Cnet.Testing</RootNamespace>
+    <AssemblyName>Cnet.Testing</AssemblyName>
+    <PackageId>cnet.testing</PackageId>
+    <Description>Test harness for cnet Telegram bots: drive commands, messages, and callbacks through your real handler pipeline with a fake bot client, and assert on the outgoing requests — no Telegram connection required.</Description>
+    <PackageIcon>logo.png</PackageIcon>
+    <PackageTags>telegram;bot;testing;test</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Cnet\Cnet.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\..\docs\PACKAGE_README.md" Pack="true" PackagePath="README.md" />
+    <None Include="..\..\assets\logo-128.png" Pack="true" PackagePath="logo.png" />
+  </ItemGroup>
+
+</Project>

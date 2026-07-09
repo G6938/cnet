@@ -1,7 +1,7 @@
-using System.Collections.Concurrent;
 using Cnet.Pipeline;
 using Cnet.Routing;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Telegram.Bot.Types;
@@ -29,94 +29,83 @@ public sealed class AlbumContext(
     public IReadOnlyList<int> MessageIds => [.. Messages.Select(message => message.Id)];
 }
 
-public sealed class AlbumAggregator(
-    IServiceScopeFactory scopeFactory,
-    CnetRouter router,
-    CnetClient client,
-    IOptions<CnetOptions> options,
-    ILogger<AlbumAggregator> logger)
+public sealed class MediaGroupMiddleware(IAlbumStore store, IOptions<CnetOptions> options) : IUpdateMiddleware
 {
-    private readonly ConcurrentDictionary<string, List<Message>> _groups = new(StringComparer.Ordinal);
-
-    public void Add(Message message)
-    {
-        ArgumentNullException.ThrowIfNull(message);
-        if (message.MediaGroupId is not { Length: > 0 } mediaGroupId || message.From is null)
-        {
-            return;
-        }
-
-        var groupKey = message.Chat.Id + ":" + mediaGroupId;
-        var isFirst = false;
-
-        var group = _groups.GetOrAdd(groupKey, _ =>
-        {
-            isFirst = true;
-            return [];
-        });
-
-        lock (group)
-        {
-            group.Add(message);
-        }
-
-        if (isFirst)
-        {
-            _ = FlushAfterDelayAsync(groupKey);
-        }
-    }
-
-    private async Task FlushAfterDelayAsync(string groupKey)
-    {
-        try
-        {
-            await Task.Delay(options.Value.AlbumFlushDelayMilliseconds).ConfigureAwait(false);
-
-            if (!_groups.TryRemove(groupKey, out var group))
-            {
-                return;
-            }
-
-            List<Message> snapshot;
-            lock (group)
-            {
-                snapshot = [.. group.OrderBy(message => message.Id)];
-            }
-
-            if (snapshot.Count == 0)
-            {
-                return;
-            }
-
-            await using var scope = scopeFactory.CreateAsyncScope();
-            var context = new AlbumContext(snapshot, client, scope.ServiceProvider, CancellationToken.None);
-            await router.RouteAlbumAsync(context).ConfigureAwait(false);
-        }
-        catch (Exception exception)
-        {
-            logger.AlbumFlushFailed(exception);
-        }
-    }
-}
-
-public sealed class MediaGroupMiddleware(AlbumAggregator aggregator) : IUpdateMiddleware
-{
-    public Task InvokeAsync(UpdateContext context, UpdateStep nextStep)
+    public async Task InvokeAsync(UpdateContext context, UpdateStep nextStep)
     {
         ArgumentNullException.ThrowIfNull(context);
         ArgumentNullException.ThrowIfNull(nextStep);
 
-        if (context.Update.Message is { MediaGroupId.Length: > 0 } message)
+        if (context.Update.Message is { MediaGroupId.Length: > 0, From: not null } message)
         {
-            aggregator.Add(message);
-            return Task.CompletedTask;
+            await store.AddAsync(
+                message,
+                TimeSpan.FromMilliseconds(options.Value.AlbumFlushDelayMilliseconds),
+                context.CancellationToken).ConfigureAwait(false);
+            return;
         }
 
-        return nextStep(context);
+        await nextStep(context).ConfigureAwait(false);
     }
 }
 
-internal static partial class AlbumAggregatorLog
+public sealed class AlbumFlushService(
+    IAlbumStore store,
+    IServiceScopeFactory scopeFactory,
+    CnetRouter router,
+    ILogger<AlbumFlushService> logger) : BackgroundService
+{
+    private static readonly TimeSpan PollInterval = TimeSpan.FromMilliseconds(250);
+
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    {
+        await Task.Yield();
+
+        while (!stoppingToken.IsCancellationRequested)
+        {
+            try
+            {
+                var due = await store.CollectDueAsync(stoppingToken).ConfigureAwait(false);
+                foreach (var album in due)
+                {
+                    await FlushAsync(album, stoppingToken).ConfigureAwait(false);
+                }
+            }
+            catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+            {
+                return;
+            }
+            catch (Exception exception)
+            {
+                logger.AlbumFlushFailed(exception);
+            }
+
+            try
+            {
+                await Task.Delay(PollInterval, stoppingToken).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+            {
+                return;
+            }
+        }
+    }
+
+    private async Task FlushAsync(IReadOnlyList<Message> album, CancellationToken cancellationToken)
+    {
+        if (album.Count == 0)
+        {
+            return;
+        }
+
+        await using var scope = scopeFactory.CreateAsyncScope();
+        var client = scope.ServiceProvider.GetRequiredService<CnetClient>();
+        var context = new AlbumContext(album, client, scope.ServiceProvider, cancellationToken);
+        await router.RouteAlbumAsync(context).ConfigureAwait(false);
+    }
+}
+
+internal static partial class AlbumFlushServiceLog
 {
     [LoggerMessage(EventId = 1, Level = LogLevel.Error, Message = "Album flush failed")]
     internal static partial void AlbumFlushFailed(this ILogger logger, Exception exception);

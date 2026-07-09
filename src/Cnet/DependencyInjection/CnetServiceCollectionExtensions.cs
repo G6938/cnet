@@ -160,8 +160,9 @@ public sealed class CnetBuilder(IServiceCollection services)
         Services.AddOptions<RouterRegistrations>().Configure(registrations =>
             registrations.Actions.Add(router => router.AddAlbumHandler(handler)));
         EnsureRouterConfigured();
-        Services.TryAddSingleton<AlbumAggregator>();
+        Services.TryAddSingleton<IAlbumStore, InMemoryAlbumStore>();
         Services.AddScoped<IUpdateMiddleware, MediaGroupMiddleware>();
+        Services.TryAddEnumerable(ServiceDescriptor.Singleton<IHostedService, AlbumFlushService>());
         return this;
     }
 
