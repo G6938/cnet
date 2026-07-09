@@ -6,6 +6,5 @@ obj/
 .idea/
 TestResults/
 artifacts/
-.claude/
 *.env
 !.env.example

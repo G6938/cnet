@@ -5,6 +5,20 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2026-07-09
+
+### Added
+
+- Rich context API on message and command contexts: `ReplyQuotedAsync`,
+  `ReplyWithPhotoAsync`, `ReplyWithDocumentAsync`, `ReplyWithStickerAsync`,
+  `ReactAsync`, `DeleteAsync`, `CopyToAsync`, `ForwardToAsync`, `TypingAsync`,
+  and the `Text` shortcut that falls back to captions
+- Rich callback context API: `EditTextAsync`, `DeleteMessageAsync`,
+  `ReplyAsync`, `AlertAsync`
+- `CnetClient.ForwardAsync` and `CnetClient.SendChatActionAsync`
+- Repository metadata in package manifests and GitHub Packages publishing on
+  release
+
 ## [1.1.0] - 2026-07-09
 
 ### Added
@@ -51,5 +65,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   keyboards, and ASP.NET Core webhook integration with secret-token validation
   and automatic registration
 
+[1.2.0]: https://github.com/G6938/cnet/releases/tag/v1.2.0
 [1.1.0]: https://github.com/G6938/cnet/releases/tag/v1.1.0
 [1.0.0]: https://github.com/G6938/cnet/releases/tag/v1.0.0

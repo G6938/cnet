@@ -221,6 +221,18 @@ public sealed class CnetClient(ITelegramBotClient raw, OutboundThrottle throttle
             cancellationToken);
     }
 
+    public async Task<int> ForwardAsync(long toChatId, long fromChatId, int messageId, CancellationToken cancellationToken = default)
+    {
+        await throttle.WaitAsync(toChatId, cancellationToken).ConfigureAwait(false);
+        var forwarded = await ExecuteAsync(
+            (bot, ct) => bot.ForwardMessage(toChatId, fromChatId, messageId, cancellationToken: ct),
+            cancellationToken).ConfigureAwait(false);
+        return forwarded.MessageId;
+    }
+
+    public Task SendChatActionAsync(long chatId, ChatAction action = ChatAction.Typing, CancellationToken cancellationToken = default)
+        => ExecuteAsync((bot, ct) => bot.SendChatAction(chatId, action, cancellationToken: ct), cancellationToken);
+
     public async Task DownloadFileAsync(string fileId, Stream destination, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(fileId);

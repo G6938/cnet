@@ -67,20 +67,32 @@ public sealed class FakeBotClient : ITelegramBotClient
     public Task DownloadFile(TGFile file, Stream destination, CancellationToken cancellationToken = default)
         => Task.CompletedTask;
 
+    private static int _nextFakeMessageId = 20000;
+
     private static TResponse DefaultResponse<TResponse>(object request)
     {
-        object? value = request switch
+        if (request is GetUpdatesRequest && Array.Empty<Update>() is TResponse updates)
         {
-            GetUpdatesRequest => Array.Empty<Update>(),
-            DeleteWebhookRequest => true,
-            AnswerCallbackQueryRequest => true,
-            GetMeRequest => new User { Id = 1000000000, FirstName = "fake", Username = "fake_bot" },
-            SendMessageRequest send => new Message
+            return updates;
+        }
+
+        if (request is GetMeRequest
+            && new User { Id = 1000000000, FirstName = "fake", Username = "fake_bot" } is TResponse me)
+        {
+            return me;
+        }
+
+        object? value = typeof(TResponse) switch
+        {
+            var t when t == typeof(bool) => true,
+            var t when t == typeof(Message) => new Message
             {
-                Id = 999,
+                Id = Interlocked.Increment(ref _nextFakeMessageId),
                 Date = DateTime.UtcNow,
-                Chat = new Chat { Id = send.ChatId.Identifier ?? 0, Type = Telegram.Bot.Types.Enums.ChatType.Private },
+                Chat = new Chat { Id = 1, Type = Telegram.Bot.Types.Enums.ChatType.Private },
             },
+            var t when t == typeof(MessageId) => new MessageId { Id = Interlocked.Increment(ref _nextFakeMessageId) },
+            var t when t == typeof(MessageId[]) => new[] { new MessageId { Id = Interlocked.Increment(ref _nextFakeMessageId) } },
             _ => null,
         };
 

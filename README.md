@@ -40,7 +40,11 @@ builder.Services
         await ctx.AnswerAsync();
         await ctx.Client.EditTextAsync(ctx.ChatId!.Value, ctx.MessageId!.Value, "Help text");
     })
-    .OnMessage(async ctx => await ctx.ReplyAsync("Echo: " + ctx.Message.Text))
+    .OnMessage(async ctx =>
+    {
+        await ctx.TypingAsync();
+        await ctx.ReplyQuotedAsync("Echo: " + ctx.Text);
+    })
     .UsePolling();
 
 await builder.Build().RunAsync();
