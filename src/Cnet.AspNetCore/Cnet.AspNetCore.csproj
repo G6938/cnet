@@ -5,6 +5,7 @@
     <AssemblyName>Cnet.AspNetCore</AssemblyName>
     <PackageId>cnet.aspnetcore</PackageId>
     <Description>ASP.NET Core webhook integration for the cnet Telegram toolkit: secure webhook endpoint with secret-token validation and automatic webhook registration.</Description>
+    <PackageIcon>logo.png</PackageIcon>
     <PackageTags>telegram;bot;webhook;aspnetcore</PackageTags>
   </PropertyGroup>
 
@@ -18,6 +19,7 @@
 
   <ItemGroup>
     <None Include="..\..\README.md" Pack="true" PackagePath="\" />
+    <None Include="..\..\assets\logo-128.png" Pack="true" PackagePath="logo.png" />
   </ItemGroup>
 
 </Project>
