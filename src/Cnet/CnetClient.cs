@@ -1,3 +1,4 @@
+using Cnet.Throttling;
 using Microsoft.Extensions.Options;
 using Telegram.Bot;
 using Telegram.Bot.Exceptions;
@@ -7,7 +8,7 @@ using Telegram.Bot.Types.ReplyMarkups;
 
 namespace Cnet;
 
-public sealed class CnetClient(ITelegramBotClient raw, IOptions<CnetOptions> options)
+public sealed class CnetClient(ITelegramBotClient raw, OutboundThrottle throttle, IOptions<CnetOptions> options)
 {
     private readonly int _maxAttempts = options.Value.MaxSendAttempts;
     private User? _me;
@@ -47,6 +48,7 @@ public sealed class CnetClient(ITelegramBotClient raw, IOptions<CnetOptions> opt
         bool disableLinkPreview = true,
         CancellationToken cancellationToken = default)
     {
+        await throttle.WaitAsync(chatId, cancellationToken).ConfigureAwait(false);
         var message = await ExecuteAsync(
             (bot, ct) => bot.SendMessage(
                 chatId,
@@ -68,7 +70,18 @@ public sealed class CnetClient(ITelegramBotClient raw, IOptions<CnetOptions> opt
         InlineKeyboardMarkup? keyboard = null,
         ParseMode parseMode = ParseMode.Html,
         CancellationToken cancellationToken = default)
-        => ExecuteAsync(
+        => EditTextCoreAsync(chatId, messageId, text, keyboard, parseMode, cancellationToken);
+
+    private async Task EditTextCoreAsync(
+        long chatId,
+        int messageId,
+        string text,
+        InlineKeyboardMarkup? keyboard,
+        ParseMode parseMode,
+        CancellationToken cancellationToken)
+    {
+        await throttle.WaitAsync(chatId, cancellationToken).ConfigureAwait(false);
+        await ExecuteAsync(
             (bot, ct) => bot.EditMessageText(
                 chatId,
                 messageId,
@@ -77,13 +90,15 @@ public sealed class CnetClient(ITelegramBotClient raw, IOptions<CnetOptions> opt
                 linkPreviewOptions: true,
                 replyMarkup: keyboard,
                 cancellationToken: ct),
-            cancellationToken);
+            cancellationToken).ConfigureAwait(false);
+    }
 
     public Task DeleteMessageAsync(long chatId, int messageId, CancellationToken cancellationToken = default)
         => ExecuteAsync((bot, ct) => bot.DeleteMessage(chatId, messageId, ct), cancellationToken);
 
     public async Task<int> SendStickerAsync(long chatId, string stickerFileId, CancellationToken cancellationToken = default)
     {
+        await throttle.WaitAsync(chatId, cancellationToken).ConfigureAwait(false);
         var message = await ExecuteAsync(
             (bot, ct) => bot.SendSticker(chatId, InputFile.FromFileId(stickerFileId), cancellationToken: ct),
             cancellationToken).ConfigureAwait(false);
@@ -97,6 +112,7 @@ public sealed class CnetClient(ITelegramBotClient raw, IOptions<CnetOptions> opt
         ReplyMarkup? keyboard = null,
         CancellationToken cancellationToken = default)
     {
+        await throttle.WaitAsync(chatId, cancellationToken).ConfigureAwait(false);
         var message = await ExecuteAsync(
             (bot, ct) => bot.SendPhoto(
                 chatId,
@@ -115,6 +131,7 @@ public sealed class CnetClient(ITelegramBotClient raw, IOptions<CnetOptions> opt
         string? caption = null,
         CancellationToken cancellationToken = default)
     {
+        await throttle.WaitAsync(chatId, cancellationToken).ConfigureAwait(false);
         var message = await ExecuteAsync(
             (bot, ct) => bot.SendDocument(
                 chatId,
@@ -134,6 +151,7 @@ public sealed class CnetClient(ITelegramBotClient raw, IOptions<CnetOptions> opt
         InlineKeyboardMarkup? keyboard = null,
         CancellationToken cancellationToken = default)
     {
+        await throttle.WaitAsync(toChatId, cancellationToken).ConfigureAwait(false);
         var copied = await ExecuteAsync(
             (bot, ct) => bot.CopyMessage(
                 toChatId,
@@ -154,6 +172,7 @@ public sealed class CnetClient(ITelegramBotClient raw, IOptions<CnetOptions> opt
     {
         ArgumentNullException.ThrowIfNull(messageIds);
 
+        await throttle.WaitAsync(toChatId, cancellationToken).ConfigureAwait(false);
         var copied = await ExecuteAsync(
             (bot, ct) => bot.CopyMessages(toChatId, fromChatId, [.. messageIds], cancellationToken: ct),
             cancellationToken).ConfigureAwait(false);
@@ -200,6 +219,15 @@ public sealed class CnetClient(ITelegramBotClient raw, IOptions<CnetOptions> opt
                 commands.Select(pair => new BotCommand { Command = pair.Command, Description = pair.Description }),
                 cancellationToken: ct),
             cancellationToken);
+    }
+
+    public async Task DownloadFileAsync(string fileId, Stream destination, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(fileId);
+        ArgumentNullException.ThrowIfNull(destination);
+
+        var file = await ExecuteAsync((bot, ct) => bot.GetFile(fileId, ct), cancellationToken).ConfigureAwait(false);
+        await Raw.DownloadFile(file.FilePath!, destination, cancellationToken).ConfigureAwait(false);
     }
 
     private static ReplyParameters? ToReplyParameters(int? replyToMessageId)

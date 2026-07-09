@@ -1,8 +1,6 @@
 using Cnet.Pipeline;
 using Cnet.Routing;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
-using Telegram.Bot;
 using Telegram.Bot.Types;
 using Xunit;
 
@@ -10,9 +8,7 @@ namespace Cnet.Tests;
 
 public sealed class PipelineTests
 {
-    private static readonly CnetClient Client = new(
-        new TelegramBotClient("1000000000:test-token-for-pipeline-tests"),
-        Options.Create(new CnetOptions { BotToken = "x" }));
+    private static readonly CnetClient Client = TestKit.Client();
 
     private static readonly IServiceProvider Services = new ServiceCollection().BuildServiceProvider();
 

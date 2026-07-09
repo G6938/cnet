@@ -9,18 +9,23 @@ public interface IUpdateMiddleware
     Task InvokeAsync(UpdateContext context, UpdateStep nextStep);
 }
 
-public sealed class UpdatePipeline(IEnumerable<IUpdateMiddleware> middlewares, CnetRouter router)
+public sealed class UpdatePipeline
 {
-    public Task ExecuteAsync(UpdateContext context)
+    private readonly UpdateStep _entryPoint;
+
+    public UpdatePipeline(IEnumerable<IUpdateMiddleware> middlewares, CnetRouter router)
     {
-        var pipeline = middlewares
+        ArgumentNullException.ThrowIfNull(middlewares);
+        ArgumentNullException.ThrowIfNull(router);
+
+        _entryPoint = middlewares
             .Reverse()
             .Aggregate(
                 (UpdateStep)(ctx => router.RouteAsync(ctx)),
                 (nextStep, middleware) => ctx => middleware.InvokeAsync(ctx, nextStep));
-
-        return pipeline(context);
     }
+
+    public Task ExecuteAsync(UpdateContext context) => _entryPoint(context);
 }
 
 public sealed class ReplayGuardMiddleware : IUpdateMiddleware

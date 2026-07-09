@@ -70,10 +70,17 @@ Or use `ctx.Client.Raw` for the untouched `ITelegramBotClient`.
 ## Highlights
 
 - Automatic retry on 429 (`retry_after` respected) and transient network errors
-- Bounded update queue, configurable worker concurrency, graceful shutdown
-- Longest-prefix callback routing, command parsing with `@BotName` support
+- Proactive outbound throttle: 30 msg/s global, 1 msg/s per chat (configurable, on by default)
+- Sessions and FSM: `ctx.Session()` state + typed data, `OnState("step", ...)` routing, pluggable `ISessionStorage`
+- Media group aggregation: `OnAlbum(...)` receives whole albums as one event
+- Inbound per-user rate limiting: `UseRateLimit(30)`
+- Global error hook: `OnError(ctx => ...)`
+- Class-based handlers with constructor DI: `OnCommand<StartHandler>()`
+- Localization: `AddTexts(...)` + `ctx.T("key")` keyed by the user's language
+- Bounded update queue with backpressure, configurable worker concurrency, graceful shutdown
+- Longest-prefix callback routing; unmatched callbacks are auto-answered
 - Middleware pipeline (`IUpdateMiddleware`) with built-in replay guard
-- Fluent inline and reply keyboard builders
+- Fluent inline and reply keyboard builders, file download helper
 - Constant-time webhook secret validation
 
 ## License

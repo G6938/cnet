@@ -18,6 +18,12 @@ public class UpdateContext(Update update, CnetClient client, IServiceProvider se
         ?? Update.CallbackQuery?.From.Id
         ?? Update.InlineQuery?.From.Id
         ?? Update.MyChatMember?.From.Id;
+
+    public string? LanguageCode =>
+        Update.Message?.From?.LanguageCode
+        ?? Update.EditedMessage?.From?.LanguageCode
+        ?? Update.CallbackQuery?.From.LanguageCode
+        ?? Update.InlineQuery?.From.LanguageCode;
 }
 
 public sealed class CommandContext(
