@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security vulnerability
+    url: https://github.com/G6938/cnet/security/advisories/new
+    about: Report security issues privately. Never open a public issue for vulnerabilities.
+  - name: Question / discussion
+    url: https://github.com/G6938/cnet/discussions
+    about: Ask usage questions and discuss ideas.
