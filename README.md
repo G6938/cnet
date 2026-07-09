@@ -1,4 +1,4 @@
-<p align="center"><img src="assets/logo.png" width="140" alt="cnet"></p>
+<p align="center"><img src="https://raw.githubusercontent.com/G6938/cnet/main/assets/logo.png" width="140" alt="cnet"></p>
 
 # cnet
 
@@ -6,7 +6,7 @@
   <a href="https://github.com/G6938/cnet/actions/workflows/ci.yml"><img src="https://github.com/G6938/cnet/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <a href="https://www.nuget.org/packages/cnet"><img src="https://img.shields.io/nuget/v/cnet.svg" alt="NuGet"></a>
   <a href="https://www.nuget.org/packages/cnet"><img src="https://img.shields.io/nuget/dt/cnet.svg" alt="Downloads"></a>
-  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License"></a>
+  <a href="https://github.com/G6938/cnet/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License"></a>
   <img src="https://img.shields.io/badge/.NET-9.0-512BD4.svg" alt=".NET 9">
 </p>
 
@@ -115,22 +115,22 @@ Or use `Client.Raw` for the untouched `ITelegramBotClient`.
 
 ## Documentation
 
-- [Changelog](CHANGELOG.md)
-- [Contributing guide](CONTRIBUTING.md)
-- [Security policy](SECURITY.md)
-- [Code of conduct](CODE_OF_CONDUCT.md)
+- [Changelog](https://github.com/G6938/cnet/blob/main/CHANGELOG.md)
+- [Contributing guide](https://github.com/G6938/cnet/blob/main/CONTRIBUTING.md)
+- [Security policy](https://github.com/G6938/cnet/blob/main/SECURITY.md)
+- [Code of conduct](https://github.com/G6938/cnet/blob/main/CODE_OF_CONDUCT.md)
 
 ## Contributing
 
-Contributions are welcome. Read the [contributing guide](CONTRIBUTING.md)
+Contributions are welcome. Read the [contributing guide](https://github.com/G6938/cnet/blob/main/CONTRIBUTING.md)
 first — it covers development setup, coding standards, and the pull request
-process. For security issues follow the [security policy](SECURITY.md)
+process. For security issues follow the [security policy](https://github.com/G6938/cnet/blob/main/SECURITY.md)
 instead of opening a public issue.
 
 ## License
 
 Copyright (c) 2026 The cnet Authors and contributors. Released under the
-[MIT License](LICENSE).
+[MIT License](https://github.com/G6938/cnet/blob/main/LICENSE).
 
 Telegram is a trademark of Telegram FZ-LLC. This project is an independent,
 community-maintained library and is not affiliated with, sponsored, or

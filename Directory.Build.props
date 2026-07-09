@@ -14,8 +14,9 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <Version>1.2.0</Version>
-    <Authors>cnet</Authors>
+    <Version>1.2.1</Version>
+    <Authors>The cnet Authors</Authors>
+    <Copyright>Copyright (c) 2026 The cnet Authors and contributors</Copyright>
     <RepositoryType>git</RepositoryType>
     <RepositoryUrl>https://github.com/G6938/cnet</RepositoryUrl>
     <PackageProjectUrl>https://github.com/G6938/cnet</PackageProjectUrl>
