@@ -10,6 +10,8 @@ public class UpdateContext(Update update, CnetClient client, IServiceProvider se
 
     public CnetClient Client { get; } = client;
 
+    public Telegram.Bot.ITelegramBotClient Bot => Client.Raw;
+
     public IServiceProvider Services { get; } = services;
 
     public CancellationToken CancellationToken { get; } = cancellationToken;

@@ -181,12 +181,24 @@ await msg.CopyToAsync(otherChatId);
 await msg.ForwardToAsync(otherChatId);
 ```
 
-The `Client` on any context is the full-featured sender:
+The `Client` on any context is the full-featured sender, with wrappers for
+every common media type — all throttled and retried:
 
 ```csharp
-await ctx.Client.SendTextAsync(chatId, "<b>bold</b>", parseMode: ParseMode.Html);
+await ctx.Client.SendTextAsync(chatId, "<b>bold</b>");
+await ctx.Client.SendPhotoAsync(chatId, url, caption: "hi");
+await ctx.Client.SendVideoAsync(chatId, url);
+await ctx.Client.SendAudioAsync(chatId, url);
+await ctx.Client.SendVoiceAsync(chatId, url);
+await ctx.Client.SendAnimationAsync(chatId, url);
+await ctx.Client.SendDocumentAsync(chatId, url);
+await ctx.Client.SendLocationAsync(chatId, 35.7, 51.4);
+await ctx.Client.SendContactAsync(chatId, "+1555", "Sam");
+await ctx.Client.SendPollAsync(chatId, "Best?", ["A", "B", "C"]);
+await ctx.Client.SendDiceAsync(chatId, "🎲");
 await ctx.Client.EditTextAsync(chatId, messageId, "edited");
-await ctx.Client.SendChatActionAsync(chatId, ChatAction.UploadPhoto);
+await ctx.Client.PinAsync(chatId, messageId);
+await ctx.Client.BanAsync(chatId, userId);
 ```
 
 ## Keyboards
@@ -354,12 +366,17 @@ and use that URL as `PublicUrl`.
 cnet wraps the common operations; everything else is one call away with the
 same automatic retry:
 
-```csharp
-// Any Telegram.Bot method, wrapped in the retry policy:
-await ctx.Client.ExecuteAsync((bot, ct) => bot.SendDice(chatId, cancellationToken: ct));
+Every context exposes `Bot` — the raw `ITelegramBotClient` with all 180+ Bot
+API methods and full IntelliSense:
 
-// Or the untouched client:
-var chat = await ctx.Client.Raw.GetChat(chatId);
+```csharp
+// Direct access to any method, with IntelliSense on ctx.Bot:
+await ctx.Bot.SendGame(chatId, "my_game");
+await ctx.Bot.CreateForumTopic(chatId, "General");
+await ctx.Bot.SendGift(userId, giftId);
+
+// Or wrap any call in the automatic retry policy:
+await ctx.Client.ExecuteAsync((bot, ct) => bot.SendDice(chatId, cancellationToken: ct));
 ```
 
 ## Bot API 10.1 support

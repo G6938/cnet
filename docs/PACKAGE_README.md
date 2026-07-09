@@ -68,8 +68,9 @@ app.MapCnetWebhook();
 - Inbound per-user rate limiting, replay protection, global error hook
 - Class-based handlers with constructor injection
 - Bounded update queue with backpressure and graceful shutdown
-- Full Bot API 10.1 support (rich messages, guardian bots) via the raw client
-  or `Client.ExecuteAsync`, with the same retry policy
+- Wrappers for every common send and management operation, plus `ctx.Bot` for
+  direct IntelliSense access to all 180+ Bot API 10.1 methods (rich messages,
+  guardian bots, gifts, business accounts) with the same retry policy
 
 ## Documentation
 
