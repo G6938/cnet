@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Cnet</RootNamespace>
+    <AssemblyName>Cnet</AssemblyName>
+    <PackageId>cnet</PackageId>
+    <Description>High-level Telegram bot toolkit: full Bot API access through Telegram.Bot, plus automatic 429 retry, fluent keyboards, command and callback routing, middleware pipeline, bounded update queue with background workers, and long polling.</Description>
+    <PackageTags>telegram;bot;telegram-bot;webhook;polling</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Telegram.Bot" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Http" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Options" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\..\README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+</Project>
