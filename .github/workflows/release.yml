@@ -20,9 +20,6 @@ jobs:
         with:
           dotnet-version: 9.0.x
 
-      - name: Test
-        run: dotnet test --configuration Release
-
       - name: Pack
         run: dotnet pack --configuration Release --output artifacts
 

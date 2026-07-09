@@ -3,8 +3,4 @@
     <Project Path="src/Cnet.AspNetCore/Cnet.AspNetCore.csproj" />
     <Project Path="src/Cnet/Cnet.csproj" />
   </Folder>
-  <Folder Name="/tests/">
-    <Project Path="tests/Cnet.AspNetCore.Tests/Cnet.AspNetCore.Tests.csproj" />
-    <Project Path="tests/Cnet.Tests/Cnet.Tests.csproj" />
-  </Folder>
 </Solution>

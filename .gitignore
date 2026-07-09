@@ -8,3 +8,7 @@ TestResults/
 artifacts/
 *.env
 !.env.example
+
+# local-only test projects
+tests/
+cnet.local.slnx
