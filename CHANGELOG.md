@@ -5,6 +5,14 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.2] - 2026-07-09
+
+### Fixed
+
+- Dedicated plain-Markdown package readme: NuGet.org strips HTML, so the
+  package now ships a NuGet-compatible readme while the repository keeps the
+  rich one
+
 ## [1.2.1] - 2026-07-09
 
 ### Fixed
@@ -73,6 +81,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   keyboards, and ASP.NET Core webhook integration with secret-token validation
   and automatic registration
 
+[1.2.2]: https://github.com/G6938/cnet/releases/tag/v1.2.2
 [1.2.1]: https://github.com/G6938/cnet/releases/tag/v1.2.1
 [1.2.0]: https://github.com/G6938/cnet/releases/tag/v1.2.0
 [1.1.0]: https://github.com/G6938/cnet/releases/tag/v1.1.0

@@ -14,7 +14,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <Version>1.2.1</Version>
+    <Version>1.2.2</Version>
     <Authors>The cnet Authors</Authors>
     <Copyright>Copyright (c) 2026 The cnet Authors and contributors</Copyright>
     <RepositoryType>git</RepositoryType>

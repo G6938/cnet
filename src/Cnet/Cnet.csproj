@@ -19,7 +19,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="..\..\README.md" Pack="true" PackagePath="\" />
+    <None Include="..\..\docs\PACKAGE_README.md" Pack="true" PackagePath="README.md" />
     <None Include="..\..\assets\logo-128.png" Pack="true" PackagePath="logo.png" />
   </ItemGroup>
 
