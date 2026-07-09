@@ -7,6 +7,7 @@
 [![Downloads](https://img.shields.io/nuget/dt/cnet.svg)](https://www.nuget.org/packages/cnet)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/G6938/cnet/blob/main/LICENSE)
 ![.NET 9](https://img.shields.io/badge/.NET-9.0-512BD4.svg)
+![Bot API 10.1](https://img.shields.io/badge/Bot%20API-10.1-2CA5E0.svg)
 
 Telegram bot toolkit for .NET 9 — strongly typed handlers, built-in flood
 control and automatic retry, sessions and FSM, media-group aggregation, long
@@ -67,8 +68,8 @@ app.MapCnetWebhook();
 - Inbound per-user rate limiting, replay protection, global error hook
 - Class-based handlers with constructor injection
 - Bounded update queue with backpressure and graceful shutdown
-- Full Bot API access with the same retry policy via `Client.ExecuteAsync`
-  or the raw `ITelegramBotClient`
+- Full Bot API 10.1 support (rich messages, guardian bots) via the raw client
+  or `Client.ExecuteAsync`, with the same retry policy
 
 ## Documentation
 

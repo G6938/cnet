@@ -8,7 +8,7 @@ using Telegram.Bot.Types.ReplyMarkups;
 
 namespace Cnet;
 
-public sealed class CnetClient(ITelegramBotClient raw, OutboundThrottle throttle, IOptions<CnetOptions> options)
+public sealed partial class CnetClient(ITelegramBotClient raw, OutboundThrottle throttle, IOptions<CnetOptions> options)
 {
     private readonly int _maxAttempts = options.Value.MaxSendAttempts;
     private User? _me;
@@ -55,7 +55,7 @@ public sealed class CnetClient(ITelegramBotClient raw, OutboundThrottle throttle
                 text,
                 parseMode: parseMode,
                 replyParameters: ToReplyParameters(replyToMessageId),
-                linkPreviewOptions: disableLinkPreview,
+                linkPreviewOptions: disableLinkPreview ? LinkPreviewOptions.Disabled : null,
                 replyMarkup: keyboard,
                 cancellationToken: ct),
             cancellationToken).ConfigureAwait(false);
@@ -87,7 +87,7 @@ public sealed class CnetClient(ITelegramBotClient raw, OutboundThrottle throttle
                 messageId,
                 text,
                 parseMode: parseMode,
-                linkPreviewOptions: true,
+                linkPreviewOptions: LinkPreviewOptions.Disabled,
                 replyMarkup: keyboard,
                 cancellationToken: ct),
             cancellationToken).ConfigureAwait(false);
