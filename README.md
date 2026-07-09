@@ -43,16 +43,15 @@
 
 ## Why cnet
 
-Most bot frameworks hand every handler the same mutable `ctx` object and leave
-production concerns — flood limits, retries, back-pressure — to plugins or to
-you. cnet takes a different position:
+cnet is built around three ideas:
 
 - **Typed turns.** Each interaction has its own handler and its own context
-  with exactly the operations it supports. The compiler rules out mistakes
-  before the bot runs.
+  with exactly the operations it supports — a command handler, a callback
+  handler, a message handler. The compiler rules out mistakes before the bot
+  runs.
 - **Production plumbing in the core.** Outbound throttling, 429 retry, a
   bounded queue with back-pressure, replay protection, and graceful shutdown
-  are built in and on by default.
+  are built in and on by default — not left to plugins or to you.
 - **No ceiling.** Anything the toolkit does not wrap is one call away with the
   same retry policy through `Client.ExecuteAsync` or the raw
   `ITelegramBotClient`.
@@ -191,24 +190,24 @@ await msg.CopyToAsync(otherChatId);
 await msg.ForwardToAsync(otherChatId);
 ```
 
-The `Client` on any context is the full-featured sender, with wrappers for
+Every context exposes `Client`, the full-featured sender with wrappers for
 every common media type — all throttled and retried:
 
 ```csharp
-await ctx.Client.SendTextAsync(chatId, "<b>bold</b>");
-await ctx.Client.SendPhotoAsync(chatId, url, caption: "hi");
-await ctx.Client.SendVideoAsync(chatId, url);
-await ctx.Client.SendAudioAsync(chatId, url);
-await ctx.Client.SendVoiceAsync(chatId, url);
-await ctx.Client.SendAnimationAsync(chatId, url);
-await ctx.Client.SendDocumentAsync(chatId, url);
-await ctx.Client.SendLocationAsync(chatId, 35.7, 51.4);
-await ctx.Client.SendContactAsync(chatId, "+1555", "Sam");
-await ctx.Client.SendPollAsync(chatId, "Best?", ["A", "B", "C"]);
-await ctx.Client.SendDiceAsync(chatId, "🎲");
-await ctx.Client.EditTextAsync(chatId, messageId, "edited");
-await ctx.Client.PinAsync(chatId, messageId);
-await ctx.Client.BanAsync(chatId, userId);
+await msg.Client.SendTextAsync(chatId, "<b>bold</b>");
+await msg.Client.SendPhotoAsync(chatId, url, caption: "hi");
+await msg.Client.SendVideoAsync(chatId, url);
+await msg.Client.SendAudioAsync(chatId, url);
+await msg.Client.SendVoiceAsync(chatId, url);
+await msg.Client.SendAnimationAsync(chatId, url);
+await msg.Client.SendDocumentAsync(chatId, url);
+await msg.Client.SendLocationAsync(chatId, 35.7, 51.4);
+await msg.Client.SendContactAsync(chatId, "+1555", "Sam");
+await msg.Client.SendPollAsync(chatId, "Best?", ["A", "B", "C"]);
+await msg.Client.SendDiceAsync(chatId, "🎲");
+await msg.Client.EditTextAsync(chatId, messageId, "edited");
+await msg.Client.PinAsync(chatId, messageId);
+await msg.Client.BanAsync(chatId, userId);
 ```
 
 ## Keyboards
@@ -380,13 +379,13 @@ Every context exposes `Bot` — the raw `ITelegramBotClient` with all 180+ Bot
 API methods and full IntelliSense:
 
 ```csharp
-// Direct access to any method, with IntelliSense on ctx.Bot:
-await ctx.Bot.SendGame(chatId, "my_game");
-await ctx.Bot.CreateForumTopic(chatId, "General");
-await ctx.Bot.SendGift(userId, giftId);
+// Direct access to any method, with IntelliSense on the Bot property:
+await msg.Bot.SendGame(chatId, "my_game");
+await msg.Bot.CreateForumTopic(chatId, "General");
+await msg.Bot.SendGift(userId, giftId);
 
 // Or wrap any call in the automatic retry policy:
-await ctx.Client.ExecuteAsync((bot, ct) => bot.SendDice(chatId, cancellationToken: ct));
+await msg.Client.ExecuteAsync((bot, ct) => bot.SendDice(chatId, cancellationToken: ct));
 ```
 
 ## Bot API 10.1 support
@@ -397,17 +396,17 @@ Convenience helpers are provided for the headline additions:
 
 ```csharp
 // Rich messages: headings, lists, tables, LaTeX, media blocks, quotes, and more.
-await ctx.Client.SendRichMessageAsync(chatId, richMessage);
+await msg.Client.SendRichMessageAsync(chatId, richMessage);
 
 // Guardian bots: answer a join-request query (approve / decline / custom result).
-await ctx.Client.AnswerJoinRequestQueryAsync(queryId, "approved");
+await msg.Client.AnswerJoinRequestQueryAsync(queryId, "approved");
 ```
 
 Anything not yet wrapped — rich message drafts for streaming, poll option
 links, chat-join Mini Apps — is reachable through `Client.Raw`:
 
 ```csharp
-await ctx.Client.ExecuteAsync((bot, ct) =>
+await msg.Client.ExecuteAsync((bot, ct) =>
     bot.SendChatJoinRequestWebApp(chatId, userId, webAppQueryId, cancellationToken: ct));
 ```
 
