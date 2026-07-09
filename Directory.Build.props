@@ -17,6 +17,8 @@
     <Version>1.1.0</Version>
     <Authors>cnet</Authors>
     <RepositoryType>git</RepositoryType>
+    <RepositoryUrl>https://github.com/G6938/cnet</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/G6938/cnet</PackageProjectUrl>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>

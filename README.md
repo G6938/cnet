@@ -107,4 +107,9 @@ instead of opening a public issue.
 
 ## License
 
-[MIT](LICENSE)
+Copyright (c) 2026 The cnet Authors and contributors. Released under the
+[MIT License](LICENSE).
+
+Telegram is a trademark of Telegram FZ-LLC. This project is an independent,
+community-maintained library and is not affiliated with, sponsored, or
+endorsed by Telegram.
