@@ -1,6 +1,8 @@
 <Solution>
   <Folder Name="/src/">
     <Project Path="src/Cnet.AspNetCore/Cnet.AspNetCore.csproj" />
+    <Project Path="src/Cnet.Metrics/Cnet.Metrics.csproj" />
+    <Project Path="src/Cnet.Redis/Cnet.Redis.csproj" />
     <Project Path="src/Cnet/Cnet.csproj" />
   </Folder>
 </Solution>

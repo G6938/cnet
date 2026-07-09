@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Cnet.Metrics</RootNamespace>
+    <AssemblyName>Cnet.Metrics</AssemblyName>
+    <PackageId>cnet.metrics</PackageId>
+    <Description>OpenTelemetry-compatible metrics for the cnet Telegram toolkit: update counts, processing latency, and failure counters exposed through a standard System.Diagnostics.Metrics meter.</Description>
+    <PackageIcon>logo.png</PackageIcon>
+    <PackageTags>telegram;bot;metrics;opentelemetry;observability</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Cnet\Cnet.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.Diagnostics.DiagnosticSource" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\..\docs\PACKAGE_README.md" Pack="true" PackagePath="README.md" />
+    <None Include="..\..\assets\logo-128.png" Pack="true" PackagePath="logo.png" />
+  </ItemGroup>
+
+</Project>

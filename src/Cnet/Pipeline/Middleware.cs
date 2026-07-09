@@ -9,6 +9,11 @@ public interface IUpdateMiddleware
     Task InvokeAsync(UpdateContext context, UpdateStep nextStep);
 }
 
+public interface IReplayGuard
+{
+    ValueTask<bool> TryRegisterAsync(int updateId, CancellationToken cancellationToken = default);
+}
+
 public sealed class UpdatePipeline
 {
     private readonly UpdateStep _entryPoint;
@@ -28,7 +33,7 @@ public sealed class UpdatePipeline
     public Task ExecuteAsync(UpdateContext context) => _entryPoint(context);
 }
 
-public sealed class ReplayGuardMiddleware : IUpdateMiddleware
+public sealed class InMemoryReplayGuard : IReplayGuard
 {
     private const int MaxTrackedUpdates = 100000;
 
@@ -36,25 +41,36 @@ public sealed class ReplayGuardMiddleware : IUpdateMiddleware
     private readonly Queue<int> _order = new();
     private readonly Lock _gate = new();
 
-    public Task InvokeAsync(UpdateContext context, UpdateStep nextStep)
+    public ValueTask<bool> TryRegisterAsync(int updateId, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(context);
-        ArgumentNullException.ThrowIfNull(nextStep);
-
         lock (_gate)
         {
-            if (!_seen.Add(context.Update.Id))
+            if (!_seen.Add(updateId))
             {
-                return Task.CompletedTask;
+                return ValueTask.FromResult(false);
             }
 
-            _order.Enqueue(context.Update.Id);
+            _order.Enqueue(updateId);
             if (_order.Count > MaxTrackedUpdates)
             {
                 _seen.Remove(_order.Dequeue());
             }
-        }
 
-        return nextStep(context);
+            return ValueTask.FromResult(true);
+        }
+    }
+}
+
+public sealed class ReplayGuardMiddleware(IReplayGuard guard) : IUpdateMiddleware
+{
+    public async Task InvokeAsync(UpdateContext context, UpdateStep nextStep)
+    {
+        ArgumentNullException.ThrowIfNull(context);
+        ArgumentNullException.ThrowIfNull(nextStep);
+
+        if (await guard.TryRegisterAsync(context.Update.Id, context.CancellationToken).ConfigureAwait(false))
+        {
+            await nextStep(context).ConfigureAwait(false);
+        }
     }
 }

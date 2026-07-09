@@ -122,8 +122,8 @@ public sealed class CnetBuilder(IServiceCollection services)
 
     public CnetBuilder UseReplayGuard()
     {
-        Services.AddSingleton<ReplayGuardMiddleware>();
-        Services.AddScoped<IUpdateMiddleware>(provider => provider.GetRequiredService<ReplayGuardMiddleware>());
+        Services.TryAddSingleton<IReplayGuard, InMemoryReplayGuard>();
+        Services.AddScoped<IUpdateMiddleware, ReplayGuardMiddleware>();
         return this;
     }
 

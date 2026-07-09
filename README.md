@@ -57,6 +57,15 @@ you. cnet takes a different position:
   same retry policy through `Client.ExecuteAsync` or the raw
   `ITelegramBotClient`.
 
+## Packages
+
+| Package | Purpose |
+|---|---|
+| `cnet` | Core toolkit: client, routing, pipeline, sessions, polling |
+| `cnet.aspnetcore` | ASP.NET Core webhook endpoint |
+| `cnet.redis` | Durable queue, distributed replay guard, shared sessions |
+| `cnet.metrics` | OpenTelemetry-compatible metrics |
+
 ## Installation
 
 ### 1. Create a project
@@ -406,6 +415,39 @@ lists, deeply nested inline formatting (spoiler, code, subscript,
 superscript), tables, media blocks, block and pull quotes, collapsible
 details, anchors, full LaTeX, maps, collages, slideshows, guardian-bot join
 queries, and poll option media links.
+
+## Scaling to multiple instances
+
+For a bot that runs behind a load balancer or survives restarts without losing
+updates, add `cnet.redis`. It replaces the in-memory queue with a durable Redis
+Stream, shares replay protection and sessions across every instance, and keeps
+unacknowledged updates until they are processed:
+
+```csharp
+using Cnet.Redis;
+
+builder.Services
+    .AddCnet(o => o.BotToken = token)
+    .UseRedis(r => r.ConnectionString = "localhost:6379")
+    .UseReplayGuard()
+    .OnCommand("start", cmd => cmd.ReplyAsync("Hi"));
+```
+
+## Metrics
+
+Add `cnet.metrics` to expose standard counters and a latency histogram under
+the `Cnet` meter, ready for OpenTelemetry or `dotnet-counters`:
+
+```csharp
+using Cnet.Metrics;
+
+builder.Services
+    .AddCnet(o => o.BotToken = token)
+    .UseMetrics();
+```
+
+Metrics: `cnet.updates.received`, `cnet.updates.processed`,
+`cnet.updates.failed`, and `cnet.update.duration` (ms).
 
 ## Configuration reference
 

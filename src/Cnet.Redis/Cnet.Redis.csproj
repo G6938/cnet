@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Cnet.Redis</RootNamespace>
+    <AssemblyName>Cnet.Redis</AssemblyName>
+    <PackageId>cnet.redis</PackageId>
+    <Description>Redis backing for the cnet Telegram toolkit: durable update queue (Redis Streams), distributed replay protection, and shared session storage — everything a multi-instance bot needs.</Description>
+    <PackageIcon>logo.png</PackageIcon>
+    <PackageTags>telegram;bot;redis;distributed;queue;session</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Cnet\Cnet.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="StackExchange.Redis" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Options" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\..\docs\PACKAGE_README.md" Pack="true" PackagePath="README.md" />
+    <None Include="..\..\assets\logo-128.png" Pack="true" PackagePath="logo.png" />
+  </ItemGroup>
+
+</Project>
