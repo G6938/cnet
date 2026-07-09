@@ -23,7 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Sessions and FSM: `ctx.Session()` with typed data and state, `OnState(...)`
+- Sessions and FSM: `Session()` with typed data and state, `OnState(...)`
   routing, pluggable `ISessionStorage` with in-memory default
 - Proactive outbound throttle (30 msg/s global, 1 msg/s per chat), on by default
 - Inbound per-user rate limiting via `UseRateLimit(...)`
@@ -32,7 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Class-based handlers with constructor injection:
   `OnCommand<T>()`, `OnCallback<T>()`, `OnMessage<T>()`
 - Filtered message handlers: `OnMessage(filter, handler)`
-- Localization: `AddTexts(...)` catalog and `ctx.T(...)` keyed by user language
+- Localization: `AddTexts(...)` catalog and `T(...)` keyed by user language
 - File download helper `CnetClient.DownloadFileAsync`
 - Package icon
 
