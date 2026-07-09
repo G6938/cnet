@@ -3,7 +3,10 @@
     "allow": [
       "Bash(sed -i '' 's|<Version>1.0.0</Version>|<Version>1.1.0</Version>|' Directory.Build.props)",
       "Bash(python3 -)",
-      "Bash(dotnet build *)"
+      "Bash(dotnet build *)",
+      "Bash(git add *)",
+      "Bash(git -c user.name=cnet -c user.email=cnet@local commit -qm \"Add community and governance files: code of conduct, contributing guide, security policy, changelog, CI/release workflows, issue and PR templates, dependabot\")",
+      "Bash(git push *)"
     ]
   }
 }

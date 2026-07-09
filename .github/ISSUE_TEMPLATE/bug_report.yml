@@ -1,0 +1,55 @@
+name: Bug report
+description: Something is broken in cnet or cnet.aspnetcore
+title: "[Bug]: "
+labels: ["bug", "needs-triage"]
+body:
+  - type: input
+    id: version
+    attributes:
+      label: Package and version
+      placeholder: cnet 1.1.0
+    validations:
+      required: true
+
+  - type: dropdown
+    id: receiver
+    attributes:
+      label: Update receiver
+      options:
+        - Long polling
+        - Webhook (cnet.aspnetcore)
+        - Not applicable
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      description: Include the full exception with stack trace if there is one.
+    validations:
+      required: true
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: Minimal reproduction
+      description: A short program or failing test that shows the problem. Do NOT include your bot token.
+      render: csharp
+    validations:
+      required: true
+
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      placeholder: .NET 9.0.8, Ubuntu 24.04, Docker
+    validations:
+      required: true

@@ -2,6 +2,14 @@
 
 # cnet
 
+<p align="center">
+  <a href="https://github.com/G6938/cnet/actions/workflows/ci.yml"><img src="https://github.com/G6938/cnet/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://www.nuget.org/packages/cnet"><img src="https://img.shields.io/nuget/v/cnet.svg" alt="NuGet"></a>
+  <a href="https://www.nuget.org/packages/cnet"><img src="https://img.shields.io/nuget/dt/cnet.svg" alt="Downloads"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License"></a>
+  <img src="https://img.shields.io/badge/.NET-9.0-512BD4.svg" alt=".NET 9">
+</p>
+
 High-level Telegram bot toolkit for .NET 9. Full Bot API access through `Telegram.Bot`, plus the production plumbing every serious bot needs: automatic 429 retry, fluent keyboards, command and callback routing, middleware pipeline, bounded update queue with parallel background workers, long polling, and a secure ASP.NET Core webhook.
 
 ## Packages
@@ -83,6 +91,20 @@ Or use `ctx.Client.Raw` for the untouched `ITelegramBotClient`.
 - Fluent inline and reply keyboard builders, file download helper
 - Constant-time webhook secret validation
 
+## Documentation
+
+- [Changelog](CHANGELOG.md)
+- [Contributing guide](CONTRIBUTING.md)
+- [Security policy](SECURITY.md)
+- [Code of conduct](CODE_OF_CONDUCT.md)
+
+## Contributing
+
+Contributions are welcome. Read the [contributing guide](CONTRIBUTING.md)
+first — it covers development setup, coding standards, and the pull request
+process. For security issues follow the [security policy](SECURITY.md)
+instead of opening a public issue.
+
 ## License
 
-MIT
+[MIT](LICENSE)
