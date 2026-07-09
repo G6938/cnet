@@ -1,15 +1,9 @@
 # Contributing to cnet
 
-Thank you for considering a contribution. This document explains how to set up
-a development environment, the standards the codebase follows, and how changes
-get merged.
+Thanks for your interest in improving cnet. This guide covers everything you
+need to get set up, make a change, and open a pull request.
 
-## Prerequisites
-
-- [.NET SDK 9.0](https://dotnet.microsoft.com/download/dotnet/9.0) or later
-- Git
-
-## Getting started
+## Quick start
 
 ```bash
 git clone https://github.com/G6938/cnet.git
@@ -18,73 +12,79 @@ dotnet build
 dotnet test
 ```
 
-The solution has three parts:
+You need the [.NET 9 SDK](https://dotnet.microsoft.com/download/dotnet/9.0).
 
-| Project | Purpose |
-|---|---|
-| `src/Cnet` | Core library: client, routing, pipeline, sessions, throttling, polling |
-| `src/Cnet.AspNetCore` | ASP.NET Core webhook integration |
-| `tests/*` | Unit and integration tests |
+> [!NOTE]
+> Tests live in a local-only solution. Use `cnet.local.slnx` to build and run
+> them; the tracked `cnet.slnx` contains only the shippable packages.
 
-## Development guidelines
+## Project layout
 
-- **Warnings are errors.** The build runs with `TreatWarningsAsErrors` and the
-  .NET analyzers at `latest-recommended`. A change that introduces a warning
-  does not build.
-- **Everything is asynchronous.** No `.Result`, `.Wait()`, or `Thread.Sleep`
-  in library code.
-- **No comments in code.** The codebase is intentionally comment-free; write
-  code that explains itself through naming and structure.
-- **Public API changes need tests.** Every bug fix needs a regression test
-  that fails without the fix.
+| Path | What it is |
+|------|------------|
+| `src/Cnet` | Core toolkit: client, routing, pipeline, sessions, polling |
+| `src/Cnet.AspNetCore` | ASP.NET Core webhook endpoint |
+| `src/Cnet.Redis` | Durable queue, distributed throttle, replay guard, sessions, albums |
+| `src/Cnet.Metrics` | OpenTelemetry-compatible metrics |
+| `src/Cnet.Testing` | Test harness with a fake bot client |
+| `samples/EchoBot` | A complete runnable example bot |
+| `tests/` | Unit and integration tests |
+
+## How to contribute
+
+1. **Open an issue first** for anything non-trivial, so we can agree on the
+   approach before you write code.
+2. **Fork and branch** from `main`: `git checkout -b fix/short-description`.
+3. **Make your change**, with tests.
+4. **Run the checks** below until they pass.
+5. **Open a pull request** against `main` using the template. Keep it focused —
+   one change per pull request gets reviewed fastest.
+
+## Before you push
+
+```bash
+dotnet build              # must succeed with zero warnings
+dotnet test cnet.local.slnx
+```
+
+> [!IMPORTANT]
+> The build treats warnings as errors and runs the .NET analyzers. A change
+> that introduces a warning will not build.
+
+## Coding standards
+
+- **Everything is async.** No `.Result`, `.Wait()`, or `Thread.Sleep` in
+  library code.
+- **No comments.** The codebase is intentionally comment-free — write code that
+  explains itself through naming and structure.
+- **Tests are required.** Every bug fix needs a regression test that fails
+  without the fix; every feature needs coverage.
 - **Logging** uses source-generated `[LoggerMessage]` methods only.
-- **No new dependencies** in `src/Cnet` without prior discussion in an issue.
-  The core intentionally depends only on `Telegram.Bot` and
-  `Microsoft.Extensions.*` abstractions.
+- **No new dependencies** in `src/Cnet` without discussing it in an issue first.
+  The core depends only on `Telegram.Bot` and the `Microsoft.Extensions.*`
+  abstractions.
 
-## Running the test suite
+## Commit messages
 
-```bash
-dotnet test
-```
-
-If your machine only has a newer .NET runtime installed:
-
-```bash
-DOTNET_ROLL_FORWARD=Major dotnet test
-```
-
-## Submitting changes
-
-1. Fork the repository and create a branch from `main`:
-   `git checkout -b fix/short-description`
-2. Make your change, including tests.
-3. Make sure `dotnet build` and `dotnet test` pass locally.
-4. Open a pull request against `main` using the pull request template.
-5. A maintainer will review it. Small, focused pull requests get reviewed
-   fastest — split unrelated changes into separate pull requests.
-
-### Commit messages
-
-Use the imperative mood and keep the subject under 72 characters:
+Use the imperative mood and keep the subject under 72 characters. Reference the
+issue in the body when there is one.
 
 ```
 Fix overflow in outbound throttle first-send path
+
+Fixes #12.
 ```
 
-Reference issues in the body when applicable (`Fixes #12`).
-
-## Reporting bugs and requesting features
-
-Use the [issue templates](https://github.com/G6938/cnet/issues/new/choose).
-Bug reports need a minimal reproduction — a failing test or a short program.
+> [!WARNING]
+> Never commit a bot token, secret, or `.env` file. If you leak a token, revoke
+> it in @BotFather immediately.
 
 ## Security issues
 
-Do **not** open a public issue for security vulnerabilities. See
-[SECURITY.md](SECURITY.md) for the private disclosure process.
+Do not open a public issue for a vulnerability. Follow the
+[security policy](SECURITY.md) to report it privately.
 
 ## License
 
-By contributing, you agree that your contributions will be licensed under the
+By contributing, you agree that your contributions are licensed under the
 [MIT License](LICENSE).
