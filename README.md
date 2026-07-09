@@ -23,6 +23,7 @@
 ## Table of contents
 
 - [Why cnet](#why-cnet)
+- [Packages](#packages)
 - [Installation](#installation)
 - [Your first bot in 5 minutes](#your-first-bot-in-5-minutes)
 - [Handlers](#handlers)
@@ -37,6 +38,9 @@
 - [Webhooks (production)](#webhooks-production)
 - [Full Bot API access](#full-bot-api-access)
 - [Bot API 10.1 support](#bot-api-101-support)
+- [Scaling to multiple instances](#scaling-to-multiple-instances)
+- [Metrics](#metrics)
+- [Testing](#testing)
 - [Configuration reference](#configuration-reference)
 - [Contributing](#contributing)
 - [License](#license)
