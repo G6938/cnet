@@ -2,47 +2,65 @@
 
 ## Supported Versions
 
+Security fixes are released for the latest minor version. Older minor versions
+do not receive backported fixes; upgrade to the latest release to stay
+supported.
+
 | Version | Supported |
 |---|---|
-| 1.1.x | ✅ |
-| 1.0.x | ❌ |
+| 1.6.x | ✅ |
+| < 1.6 | ❌ |
 
-Only the latest minor release receives security fixes.
+This policy covers all packages in the project: `cnet`, `cnet.aspnetcore`,
+`cnet.redis`, and `cnet.metrics`.
 
 ## Reporting a Vulnerability
 
-Please do **not** report security vulnerabilities through public GitHub
-issues, discussions, or pull requests.
+Do not report security vulnerabilities through public GitHub issues,
+discussions, or pull requests. Public disclosure before a fix is available puts
+every user at risk.
 
-Report them privately via one of:
+Report privately through either channel:
 
-- GitHub private vulnerability reporting:
-  [Security Advisories](https://github.com/G6938/cnet/security/advisories/new)
-- Email: mybothelp@gmail.com
+- **GitHub Security Advisories** (preferred):
+  <https://github.com/G6938/cnet/security/advisories/new>
+- **Email:** mybothelp@gmail.com
 
-Include as much of the following as you can:
+To help us triage quickly, include as much as you can:
 
-- The affected package (`cnet` or `cnet.aspnetcore`) and version
-- Type of issue (e.g. token leakage, request forgery, denial of service)
-- Step-by-step reproduction or proof-of-concept code
-- Impact assessment: what an attacker can achieve
+- Affected package and version
+- A description of the vulnerability and its impact
+- Steps to reproduce, or a minimal proof of concept
+- Any known mitigations or workarounds
 
-## What to expect
+Never include a live bot token, production secret, or personal data in a
+report. Redact them or share a reproduction that does not require them.
 
-- **Acknowledgement** within 72 hours.
-- **Assessment and fix plan** within 7 days for confirmed issues.
-- A fix is released as a patch version, the advisory is published, and you are
-  credited unless you prefer to stay anonymous.
+## Our Commitment
 
-## Scope notes
+- We acknowledge every report within **72 hours**.
+- We provide an initial assessment, including severity and a remediation plan,
+  within **7 days**.
+- We keep you informed through to the fix, coordinate a disclosure timeline,
+  and credit you in the advisory unless you ask to remain anonymous.
 
-Security-sensitive areas of this library include:
+## Security-Relevant Areas
 
-- Webhook secret-token validation (constant-time comparison)
-- Bot token handling (never logged, never serialized)
-- Replay protection for incoming updates
-- Rate limiting and flood protection
+The following parts of the library carry the highest security weight. Reports
+touching them are prioritized:
 
-Vulnerabilities in the Telegram Bot API itself or in the `Telegram.Bot`
-dependency should be reported to those projects; we will track and adopt
-upstream fixes.
+- **Webhook authentication** — the secret token is compared in constant time to
+  prevent timing attacks and forged updates.
+- **Bot token handling** — tokens are read from configuration and are never
+  logged or serialized.
+- **Replay protection** — each update is processed once, including across
+  multiple instances when the Redis package is used.
+- **Rate limiting and flood control** — inbound and outbound limits guard
+  against abuse and Telegram API bans.
+
+## Scope
+
+This policy applies to the cnet packages themselves. Vulnerabilities in the
+Telegram Bot API or in upstream dependencies such as `Telegram.Bot` or
+`StackExchange.Redis` should be reported to those projects; we track and adopt
+their fixes as they are released.
