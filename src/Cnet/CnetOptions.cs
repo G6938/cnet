@@ -19,4 +19,12 @@ public sealed class CnetOptions
     public UpdateType[]? AllowedUpdates { get; set; }
 
     public bool DropPendingUpdates { get; set; }
+
+    public bool EnableOutboundThrottle { get; set; } = true;
+
+    public int OutboundGlobalPerSecond { get; set; } = 30;
+
+    public int OutboundPerChatIntervalMilliseconds { get; set; } = 1000;
+
+    public int AlbumFlushDelayMilliseconds { get; set; } = 1500;
 }

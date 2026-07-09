@@ -23,6 +23,11 @@ public static class RetryExecutor
             {
                 await Task.Delay(TimeSpan.FromSeconds(retryAfter), cancellationToken).ConfigureAwait(false);
             }
+            catch (RequestException exception) when (
+                attempt < maxAttempts && exception is not ApiRequestException)
+            {
+                await Task.Delay(TimeSpan.FromMilliseconds(250 * attempt), cancellationToken).ConfigureAwait(false);
+            }
             catch (HttpRequestException) when (attempt < maxAttempts)
             {
                 await Task.Delay(TimeSpan.FromMilliseconds(250 * attempt), cancellationToken).ConfigureAwait(false);

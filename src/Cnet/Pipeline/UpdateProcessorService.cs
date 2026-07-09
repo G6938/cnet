@@ -37,13 +37,14 @@ public sealed class UpdateProcessorService(
             {
                 while (channel.TryDequeue(out var update))
                 {
+                    await using var scope = scopeFactory.CreateAsyncScope();
+                    var client = scope.ServiceProvider.GetRequiredService<CnetClient>();
+                    var context = new UpdateContext(update, client, scope.ServiceProvider, stoppingToken);
+
                     try
                     {
-                        await using var scope = scopeFactory.CreateAsyncScope();
                         var pipeline = scope.ServiceProvider.GetRequiredService<UpdatePipeline>();
-                        var client = scope.ServiceProvider.GetRequiredService<CnetClient>();
-                        await pipeline.ExecuteAsync(new UpdateContext(update, client, scope.ServiceProvider, stoppingToken))
-                            .ConfigureAwait(false);
+                        await pipeline.ExecuteAsync(context).ConfigureAwait(false);
                     }
                     catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
                     {
@@ -52,6 +53,7 @@ public sealed class UpdateProcessorService(
                     catch (Exception exception)
                     {
                         logger.UpdateProcessingFailed(exception, update.Id);
+                        await InvokeErrorHandlersAsync(scope.ServiceProvider, exception, context).ConfigureAwait(false);
                     }
                 }
             }
@@ -60,10 +62,35 @@ public sealed class UpdateProcessorService(
         {
         }
     }
+
+    private async Task InvokeErrorHandlersAsync(IServiceProvider services, Exception exception, UpdateContext context)
+    {
+        var handlers = services.GetService<IOptions<ErrorHandlers>>()?.Value.Handlers;
+        if (handlers is not { Count: > 0 })
+        {
+            return;
+        }
+
+        var errorContext = new ErrorContext(exception, context);
+        foreach (var handler in handlers)
+        {
+            try
+            {
+                await handler(errorContext).ConfigureAwait(false);
+            }
+            catch (Exception handlerException)
+            {
+                logger.ErrorHandlerFailed(handlerException);
+            }
+        }
+    }
 }
 
 internal static partial class UpdateProcessorServiceLog
 {
     [LoggerMessage(EventId = 1, Level = LogLevel.Error, Message = "Processing failed for update {UpdateId}")]
     internal static partial void UpdateProcessingFailed(this ILogger logger, Exception exception, int updateId);
+
+    [LoggerMessage(EventId = 2, Level = LogLevel.Error, Message = "A registered error handler threw")]
+    internal static partial void ErrorHandlerFailed(this ILogger logger, Exception exception);
 }

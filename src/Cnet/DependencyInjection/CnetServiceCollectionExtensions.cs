@@ -1,8 +1,13 @@
+using Cnet.Albums;
 using Cnet.Pipeline;
 using Cnet.Polling;
 using Cnet.Routing;
+using Cnet.Sessions;
+using Cnet.Text;
+using Cnet.Throttling;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using Telegram.Bot;
 using Telegram.Bot.Types.Enums;
@@ -25,6 +30,11 @@ public static class CnetServiceCollectionExtensions
 
         services
             .AddHttpClient("cnet-telegram")
+            .ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler
+            {
+                PooledConnectionLifetime = TimeSpan.FromMinutes(2),
+                AutomaticDecompression = System.Net.DecompressionMethods.All,
+            })
             .AddTypedClient<ITelegramBotClient>((httpClient, provider) =>
             {
                 var options = provider.GetRequiredService<IOptions<CnetOptions>>().Value;
@@ -33,9 +43,11 @@ public static class CnetServiceCollectionExtensions
 
         services.TryAddSingleton<CnetClient>();
         services.TryAddSingleton<CnetRouter>();
+        services.TryAddSingleton<OutboundThrottle>();
+        services.TryAddSingleton<ISessionStorage, InMemorySessionStorage>();
         services.TryAddSingleton<IUpdateChannel, BoundedUpdateChannel>();
         services.TryAddScoped<UpdatePipeline>();
-        services.AddHostedService<UpdateProcessorService>();
+        services.TryAddEnumerable(ServiceDescriptor.Singleton<IHostedService, UpdateProcessorService>());
 
         return new CnetBuilder(services);
     }
@@ -117,7 +129,56 @@ public sealed class CnetBuilder(IServiceCollection services)
 
     public CnetBuilder UsePolling()
     {
-        Services.AddHostedService<PollingService>();
+        Services.TryAddEnumerable(ServiceDescriptor.Singleton<IHostedService, PollingService>());
+        return this;
+    }
+
+    public CnetBuilder OnError(Func<ErrorContext, Task> handler)
+    {
+        ArgumentNullException.ThrowIfNull(handler);
+        Services.AddOptions<ErrorHandlers>().Configure(handlers => handlers.Handlers.Add(handler));
+        return this;
+    }
+
+    public CnetBuilder OnMessage(Func<Telegram.Bot.Types.Message, bool> filter, Func<MessageContext, Task> handler)
+    {
+        ArgumentNullException.ThrowIfNull(filter);
+        ArgumentNullException.ThrowIfNull(handler);
+        return OnMessage(context => filter(context.Message) ? handler(context) : Task.CompletedTask);
+    }
+
+    public CnetBuilder OnState(string state, Func<MessageContext, Task> handler)
+    {
+        Services.AddOptions<RouterRegistrations>().Configure(registrations =>
+            registrations.Actions.Add(router => router.AddStateHandler(state, handler)));
+        EnsureRouterConfigured();
+        return this;
+    }
+
+    public CnetBuilder OnAlbum(Func<AlbumContext, Task> handler)
+    {
+        Services.AddOptions<RouterRegistrations>().Configure(registrations =>
+            registrations.Actions.Add(router => router.AddAlbumHandler(handler)));
+        EnsureRouterConfigured();
+        Services.TryAddSingleton<AlbumAggregator>();
+        Services.AddScoped<IUpdateMiddleware, MediaGroupMiddleware>();
+        return this;
+    }
+
+    public CnetBuilder UseRateLimit(int updatesPerMinutePerUser)
+    {
+        ArgumentOutOfRangeException.ThrowIfLessThan(updatesPerMinutePerUser, 1);
+        Services.TryAddSingleton(new InboundRateLimitState(updatesPerMinutePerUser));
+        Services.AddScoped<IUpdateMiddleware, InboundRateLimitMiddleware>();
+        return this;
+    }
+
+    public CnetBuilder AddTexts(Action<TextCatalog> configure)
+    {
+        ArgumentNullException.ThrowIfNull(configure);
+        var catalog = new TextCatalog();
+        configure(catalog);
+        Services.TryAddSingleton(catalog);
         return this;
     }
 

@@ -14,6 +14,8 @@ public sealed class PollingService(
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        await Task.Yield();
+
         var settings = options.Value;
         var offset = 0;
 
@@ -40,7 +42,7 @@ public sealed class PollingService(
                 foreach (var update in updates)
                 {
                     offset = Math.Max(offset, update.Id + 1);
-                    channel.TryEnqueue(update);
+                    await channel.EnqueueAsync(update, stoppingToken).ConfigureAwait(false);
                 }
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)

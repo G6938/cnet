@@ -8,6 +8,8 @@ public interface IUpdateChannel
 {
     bool TryEnqueue(Update update);
 
+    ValueTask EnqueueAsync(Update update, CancellationToken cancellationToken);
+
     ValueTask<bool> WaitToReadAsync(CancellationToken cancellationToken);
 
     bool TryDequeue(out Update update);
@@ -32,6 +34,9 @@ public sealed class BoundedUpdateChannel : IUpdateChannel
     }
 
     public bool TryEnqueue(Update update) => _channel.Writer.TryWrite(update);
+
+    public ValueTask EnqueueAsync(Update update, CancellationToken cancellationToken)
+        => _channel.Writer.WriteAsync(update, cancellationToken);
 
     public ValueTask<bool> WaitToReadAsync(CancellationToken cancellationToken)
         => _channel.Reader.WaitToReadAsync(cancellationToken);
