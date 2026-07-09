@@ -27,35 +27,53 @@ var builder = Host.CreateApplicationBuilder(args);
 builder.Services
     .AddCnet(options => options.BotToken = builder.Configuration["BotToken"]!)
     .UseReplayGuard()
-    .OnCommand("start", async ctx =>
+    .OnCommand("start", async cmd =>
     {
         var keyboard = Keyboard.Inline()
             .Row().Callback("Help", "help").Url("Site", "https://example.com")
             .Build();
 
-        await ctx.Client.SendTextAsync(ctx.ChatId, "<b>Hello!</b>", keyboard);
+        await cmd.ReplyAsync("<b>Hello!</b>", keyboard);
     })
-    .OnCallback("help", async ctx =>
+    .OnCallback("help", async cb =>
     {
-        await ctx.AnswerAsync();
-        await ctx.Client.EditTextAsync(ctx.ChatId!.Value, ctx.MessageId!.Value, "Help text");
+        await cb.AnswerAsync();
+        await cb.EditTextAsync("Help text");
     })
-    .OnMessage(async ctx =>
+    .OnMessage(async msg =>
     {
-        await ctx.TypingAsync();
-        await ctx.ReplyQuotedAsync("Echo: " + ctx.Text);
+        await msg.TypingAsync();
+        await msg.ReplyQuotedAsync("Echo: " + msg.Text);
     })
     .UsePolling();
 
 await builder.Build().RunAsync();
 ```
 
+## Design
+
+Most bot frameworks hand every handler the same mutable god-object `ctx` and
+let plugins bolt properties onto it at runtime. cnet deliberately does not.
+
+- **Typed turns, not one context.** A command handler receives a
+  `CommandContext` (`cmd.Arguments`, `cmd.ReplyQuotedAsync`), a callback
+  handler receives a `CallbackContext` (`cb.Payload`, `cb.EditTextAsync`,
+  `cb.AlertAsync`), an album handler receives the whole media group at once.
+  Nothing exists on the object that cannot happen in that situation, and the
+  compiler enforces it.
+- **The plumbing is core, not plugins.** Outbound throttling, 429 retry,
+  backpressure queueing, replay protection, and graceful shutdown ship in the
+  box and are on by default — they are correctness features, not add-ons.
+- **Full API, no ceiling.** Anything the toolkit does not wrap is one call
+  away with the same retry policy:
+  `client.ExecuteAsync((bot, ct) => bot.SendDice(chatId, cancellationToken: ct))`.
+
 ## Webhook (ASP.NET Core)
 
 ```csharp
 builder.Services
     .AddCnet(options => options.BotToken = configuration["BotToken"]!)
-    .OnCommand("start", ctx => ctx.ReplyAsync("Hi"));
+    .OnCommand("start", cmd => cmd.ReplyAsync("Hi"));
 
 builder.Services.AddCnetWebhook(options =>
 {
@@ -74,21 +92,21 @@ app.Run();
 Every Bot API method is available with automatic retry:
 
 ```csharp
-await ctx.Client.ExecuteAsync((bot, ct) => bot.SendDice(chatId, cancellationToken: ct));
+await cmd.Client.ExecuteAsync((bot, ct) => bot.SendDice(chatId, cancellationToken: ct));
 ```
 
-Or use `ctx.Client.Raw` for the untouched `ITelegramBotClient`.
+Or use `Client.Raw` for the untouched `ITelegramBotClient`.
 
 ## Highlights
 
 - Automatic retry on 429 (`retry_after` respected) and transient network errors
 - Proactive outbound throttle: 30 msg/s global, 1 msg/s per chat (configurable, on by default)
-- Sessions and FSM: `ctx.Session()` state + typed data, `OnState("step", ...)` routing, pluggable `ISessionStorage`
-- Media group aggregation: `OnAlbum(...)` receives whole albums as one event
+- Sessions and FSM: `msg.Session()` state + typed data, `OnState("step", ...)` routing, pluggable `ISessionStorage`
+- Media group aggregation: `OnAlbum(album => ...)` receives whole albums as one event
 - Inbound per-user rate limiting: `UseRateLimit(30)`
-- Global error hook: `OnError(ctx => ...)`
+- Global error hook: `OnError(error => ...)`
 - Class-based handlers with constructor DI: `OnCommand<StartHandler>()`
-- Localization: `AddTexts(...)` + `ctx.T("key")` keyed by the user's language
+- Localization: `AddTexts(...)` + `msg.T("key")` keyed by the user's language
 - Bounded update queue with backpressure, configurable worker concurrency, graceful shutdown
 - Longest-prefix callback routing; unmatched callbacks are auto-answered
 - Middleware pipeline (`IUpdateMiddleware`) with built-in replay guard
