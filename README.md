@@ -52,15 +52,15 @@ await builder.Build().RunAsync();
 
 ## Design
 
-Most bot frameworks hand every handler the same mutable god-object `ctx` and
-let plugins bolt properties onto it at runtime. cnet deliberately does not.
+cnet models a bot as a set of strongly typed turns. Every kind of interaction
+has its own handler signature, and each handler receives exactly the
+capabilities that interaction supports — nothing more.
 
-- **Typed turns, not one context.** A command handler receives a
-  `CommandContext` (`cmd.Arguments`, `cmd.ReplyQuotedAsync`), a callback
-  handler receives a `CallbackContext` (`cb.Payload`, `cb.EditTextAsync`,
-  `cb.AlertAsync`), an album handler receives the whole media group at once.
-  Nothing exists on the object that cannot happen in that situation, and the
-  compiler enforces it.
+- **Typed turns.** A command handler receives a `CommandContext`
+  (`cmd.Arguments`, `cmd.ReplyQuotedAsync`), a callback handler receives a
+  `CallbackContext` (`cb.Payload`, `cb.EditTextAsync`, `cb.AlertAsync`), and
+  an album handler receives the whole media group as one event. The compiler
+  rules out impossible operations before the bot ever runs.
 - **The plumbing is core, not plugins.** Outbound throttling, 429 retry,
   backpressure queueing, replay protection, and graceful shutdown ship in the
   box and are on by default — they are correctness features, not add-ons.
