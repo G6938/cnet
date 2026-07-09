@@ -77,6 +77,30 @@ public sealed class CnetBuilder(IServiceCollection services)
         return this;
     }
 
+    public CnetBuilder OnCommand<THandler>()
+        where THandler : class, ICommandHandler
+    {
+        Services.AddScoped<THandler>();
+        return OnCommand(THandler.Command, context =>
+            context.Services.GetRequiredService<THandler>().HandleAsync(context));
+    }
+
+    public CnetBuilder OnCallback<THandler>()
+        where THandler : class, ICallbackHandler
+    {
+        Services.AddScoped<THandler>();
+        return OnCallback(THandler.Prefix, context =>
+            context.Services.GetRequiredService<THandler>().HandleAsync(context));
+    }
+
+    public CnetBuilder OnMessage<THandler>()
+        where THandler : class, IMessageHandler
+    {
+        Services.AddScoped<THandler>();
+        return OnMessage(context =>
+            context.Services.GetRequiredService<THandler>().HandleAsync(context));
+    }
+
     public CnetBuilder Use<TMiddleware>()
         where TMiddleware : class, IUpdateMiddleware
     {

@@ -5,6 +5,7 @@
     <AssemblyName>Cnet</AssemblyName>
     <PackageId>cnet</PackageId>
     <Description>High-level Telegram bot toolkit: full Bot API access through Telegram.Bot, plus automatic 429 retry, fluent keyboards, command and callback routing, middleware pipeline, bounded update queue with background workers, and long polling.</Description>
+    <PackageIcon>logo.png</PackageIcon>
     <PackageTags>telegram;bot;telegram-bot;webhook;polling</PackageTags>
   </PropertyGroup>
 
@@ -19,6 +20,7 @@
 
   <ItemGroup>
     <None Include="..\..\README.md" Pack="true" PackagePath="\" />
+    <None Include="..\..\assets\logo-128.png" Pack="true" PackagePath="logo.png" />
   </ItemGroup>
 
 </Project>

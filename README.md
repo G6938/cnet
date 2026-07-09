@@ -1,3 +1,5 @@
+<p align="center"><img src="assets/logo.png" width="140" alt="cnet"></p>
+
 # cnet
 
 High-level Telegram bot toolkit for .NET 9. Full Bot API access through `Telegram.Bot`, plus the production plumbing every serious bot needs: automatic 429 retry, fluent keyboards, command and callback routing, middleware pipeline, bounded update queue with parallel background workers, long polling, and a secure ASP.NET Core webhook.
